@@ -250,37 +250,37 @@ open class MIOPersistentStore: NSIncrementalStore
     
     func updateRelationshipIDs(oldRelationshipIDs : Any?, withNewRelationshipIDs newRelationshipIDs : Any?) {
         
-        guard let oldRelations = oldRelationshipIDs as? NSMutableDictionary else {
-            assertionFailure("oldRelations must exist");
-            return;
-        }
-        
-        guard let newRelations = newRelationshipIDs as? NSMutableDictionary else {
-            assertionFailure("newRelations must exist");
-            return;
-        }
-        
-        var keysToDelete = [Any]()
-        
-        for key in oldRelations {
-            if newRelations[key] != nil {
-                // replace
-                oldRelations[key] = newRelations[key];
-            }
-            else {
-                // delete
-                keysToDelete.append(key)
-            }
-        }
-        
-        for key in newRelations {
-            if oldRelations[key] == nil {
-                // add
-                oldRelations[key] = newRelations[key];
-            }
-        }
-        
-        oldRelations.removeObjects(forKeys: keysToDelete)
+//        guard let oldRelations = oldRelationshipIDs as? NSMutableDictionary else {
+//            assertionFailure("oldRelations must exist");
+//            return;
+//        }
+//        
+//        guard let newRelations = newRelationshipIDs as? NSMutableDictionary else {
+//            assertionFailure("newRelations must exist");
+//            return;
+//        }
+//        
+//        var keysToDelete = [String]()
+//        
+//        for key in oldRelations {
+//            if newRelations[key] != nil {
+//                // replace
+//                oldRelations[key] = newRelations[key]
+//            }
+//            else {
+//                // delete
+//                keysToDelete.append(key)
+//            }
+//        }
+//        
+//        for key in newRelations {
+//            if oldRelations[key] == nil {
+//                // add
+//                oldRelations[key] = newRelations[key];
+//            }
+//        }
+//        
+//        oldRelations.removeObjects(forKeys: keysToDelete)
     }
 
     func cacheNode(deleteNodeAtServerID serverID:String, entity:NSEntityDescription) {
