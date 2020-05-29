@@ -65,7 +65,7 @@ open class MIOPersistentStore: NSIncrementalStore
     
     public override var type: String { return "MIOPersistentStore.MIOPersistentStore" }
     
-    public var delegate: MIOPersistentStoreDelegate?
+    public var delegate: MIOPersistentStoreDelegate?        
     
     var storeURL:URL?
     
@@ -99,7 +99,7 @@ open class MIOPersistentStore: NSIncrementalStore
         
         self.storeURL = storeURL
         let uuid = UUID.init()
-        let metadata = [NSStoreUUIDKey: uuid.uuidString, NSStoreTypeKey: "MIOPersistentStore"]
+        let metadata = [NSStoreUUIDKey: uuid.uuidString, NSStoreTypeKey: type]
         self.metadata = metadata
     }
     
@@ -470,13 +470,8 @@ open class MIOPersistentStore: NSIncrementalStore
     }
     
     func executeFetchRequest_sync(_ request:MPSRequest, context:NSManagedObjectContext) throws -> [Any] {
-        
-        do {
-            try request.execute()
-        } catch let error {
-            NSLog(error.localizedDescription)
-            return []
-        }
+                
+        try request.execute()
         
         let (objectIDs, _, _) = updateObjects(items: request.fetchedItems!, for: request.entity, relationships: nil)
         
@@ -487,7 +482,7 @@ open class MIOPersistentStore: NSIncrementalStore
             objects.append(obj)
         }
         
-        return []
+        return objects
     }
     
     func cacheObjectForContext(objID:NSManagedObjectID, entity:NSEntityDescription, context:NSManagedObjectContext, refresh:Bool) {
