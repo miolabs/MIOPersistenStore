@@ -58,7 +58,7 @@ public enum MIOPersistentStoreError :Error
 
 open class MIOPersistentStore: NSIncrementalStore
 {    
-    public override var type: String { return MIOPersistentStore.className() }
+    public override var type: String { return String(describing: MIOPersistentStore.self) }
     
     public var delegate: MIOPersistentStoreDelegate?        
     
