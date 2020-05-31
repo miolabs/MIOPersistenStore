@@ -22,6 +22,7 @@ open class MPSRequest : NSObject
     
     open var entityName:String
     open var entity:NSEntityDescription
+    open var predicate:NSPredicate?
     
     public init(With entity:NSEntityDescription){
         self.entity = entity
