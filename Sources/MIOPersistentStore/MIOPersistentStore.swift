@@ -8,13 +8,10 @@
 
 import Foundation
 
-//#if os(linux)
 import MIOCoreData
-//#else
-//import CoreData
 
-
-public protocol MIOPersistentStoreDelegate : NSObjectProtocol {
+public protocol MIOPersistentStoreDelegate : NSObjectProtocol
+{
     //func store(_ store:MWSPersistentStore, requestForEntityName entityName:String, url:URL, bodyData:Data?, httpMethod:String) -> MWSRequest
     
     func store(store:MIOPersistentStore, fetchRequest:NSFetchRequest<NSManagedObject>, serverID:String?) -> MPSRequest?
@@ -60,10 +57,8 @@ public enum MIOPersistentStoreError :Error
 }
 
 open class MIOPersistentStore: NSIncrementalStore
-{
-    public class var type:String { return "MIOPersistentStore.MIOPersistentStore" }
-    
-    public override var type: String { return "MIOPersistentStore.MIOPersistentStore" }
+{    
+    public override var type: String { return MIOPersistentStore.className() }
     
     public var delegate: MIOPersistentStoreDelegate?        
     
