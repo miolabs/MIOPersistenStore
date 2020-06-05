@@ -8,6 +8,10 @@
 import Foundation
 import MIOCoreData
 
+import MIOCore
+public typealias NSPredicate = MIOPredicate
+
+
 public enum MPSRequestConnectionType
 {
     case Synchronous
