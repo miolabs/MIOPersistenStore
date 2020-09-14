@@ -27,6 +27,9 @@ open class MPSRequest : NSObject
     open var entityName:String
     open var entity:NSEntityDescription
     open var predicate:NSPredicate?
+    open var sortDescriptors: [NSSortDescriptor]?
+    open var limit: Int?
+    open var offset: Int?
     
     public init(With entity:NSEntityDescription){
         self.entity = entity
