@@ -22,7 +22,7 @@ open class MPSRequest : NSObject
 {
     open var type:MPSRequestConnectionType { get { return .Synchronous } }
     
-    open var fetchedItems:[Any]?
+    open var resultItems:[Any]?
     
     open var entityName:String
     open var entity:NSEntityDescription
