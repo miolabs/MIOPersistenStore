@@ -539,14 +539,14 @@ open class MIOPersistentStore: NSIncrementalStore
             //insertObjectIntoCache(object: obj)
         })
         
-        request.updatedObjects?.forEach({ (obj) in
+        try request.updatedObjects?.forEach({ (obj) in
             updateRelationShipsCaches(object: obj)
-            updateObjectOnServer(object: obj, context: context)
+            try updateObjectOnServer(object: obj, context: context)
             //updateObjectOnCache(object: obj)
         })
         
-        request.deletedObjects?.forEach({ (obj) in
-            deleteObjectOnServer(object: obj, context: context)
+        try request.deletedObjects?.forEach({ (obj) in
+            try deleteObjectOnServer(object: obj, context: context)
             //deleteObjectOnCache(object: obj)
             //            let serverID = referenceObject(for: obj.objectID) as! String
             //            let referenceID = obj.entity.name! + "://" + serverID;
@@ -633,7 +633,7 @@ open class MIOPersistentStore: NSIncrementalStore
         }
         
         if request.type == .Synchronous {
-            try executeInsertRequest_sync(request, context: context)
+            try executeSaveRequest_sync(request, context: context)
         }
         else {
             
@@ -663,7 +663,7 @@ open class MIOPersistentStore: NSIncrementalStore
 //        addOperation(operation: op, serverID:serverID)
     }
     
-    @discardableResult func executeInsertRequest_sync(_ request:MPSRequest, context:NSManagedObjectContext) throws -> [Any] {
+    @discardableResult func executeSaveRequest_sync(_ request:MPSRequest, context:NSManagedObjectContext) throws -> [Any] {
                 
         try request.execute()
         
@@ -687,58 +687,75 @@ open class MIOPersistentStore: NSIncrementalStore
     }
 
     
-    func updateObjectOnServer(object:NSManagedObject, context:NSManagedObjectContext) {
+    func updateObjectOnServer(object:NSManagedObject, context:NSManagedObjectContext) throws {
         
-        //        let serverID = (delegate?.webStore(store: self, serverIDForObject: object))!
-        //        let node = (cacheNode(WithServerID: serverID, entity: object.entity))!
-        //
-        //        let attribValues = self.filterOnlyAttributes(fromAllValuesOfManagedObject: object)
-        //
-        //        _ = cacheNode(updateNodeWithValues: attribValues, atServerID: serverID, version: node.version + 1, entity: object.entity)
-        //
-        //        let dependencies = NSMutableArray()
-        //        guard let request = delegate?.webStore(store: self, updateRequestForObject: object, dependencyIDs: dependencies) else {
-        //            return
-        //        }
-        //
-        //        let op = MWSUpdateOperation(webStore:self, request:request, entity:object.entity, relationshipKeyPathsForPrefetching:nil)
-        //        op.webStoreCache = persistentStoreCache
-        //        op.nodeVersion = node.version
-        //        op.completionBlock = {
-        //            context.performAndWait {
-        //                for objID in op.insertedObjectIDs {
-        //                    self.cacheObjectForContext(objID: objID, entity:object.entity, context: context, refresh: true)
-        //                }
-        //
-        //                for objID in op.updatedObjectIDs {
-        //                    self.cacheObjectForContext(objID: objID, entity:object.entity, context: context, refresh: true)
-        //                }
-        //            }
-        //
-        //            if op.responseCode != 200 {
-        //                NotificationCenter.default.post(name: NSNotification.Name(rawValue: "MWSPersistentStoreDidUpdateError"), object: object.objectID, userInfo:op.responseData as? [AnyHashable : Any])
-        //            }
-        //
-        //        }
-        //
-        //        op.serverID = serverID
-        //        op.dependencyIDs = dependencies
-        //        op.saveCount = saveCount
-        //        addOperation(operation: op, serverID:serverID)
+        let serverID = (delegate?.store(store: self, serverIDForObject: object))!
+        let node = (cacheNode(WithServerID: serverID, entity: object.entity))!
+
+        //let attribValues = self.filterOnlyAttributes(fromAllValuesOfManagedObject: object)
+
+        _ = cacheNode(updateNodeWithValues: object.changedValues(), atServerID: serverID, version: node.version + 1, entity: object.entity)
+
+        var dependencies:[String] = []
+        guard let request = delegate?.store(store: self, updateRequestForObject: object, dependencyIDs: &dependencies) else {
+            return
+        }
+        
+        if request.type == .Synchronous {
+            try executeSaveRequest_sync(request, context: context)
+        }
+        else {
+            
+        }
+
+
+//        let op = MWSUpdateOperation(webStore:self, request:request, entity:object.entity, relationshipKeyPathsForPrefetching:nil)
+//        op.webStoreCache = persistentStoreCache
+//        op.nodeVersion = node.version
+//        op.completionBlock = {
+//            context.performAndWait {
+//                for objID in op.insertedObjectIDs {
+//                    self.cacheObjectForContext(objID: objID, entity:object.entity, context: context, refresh: true)
+//                }
+//
+//                for objID in op.updatedObjectIDs {
+//                    self.cacheObjectForContext(objID: objID, entity:object.entity, context: context, refresh: true)
+//                }
+//            }
+//
+//            if op.responseCode != 200 {
+//                NotificationCenter.default.post(name: NSNotification.Name(rawValue: "MWSPersistentStoreDidUpdateError"), object: object.objectID, userInfo:op.responseData as? [AnyHashable : Any])
+//            }
+//
+//        }
+//
+//        op.serverID = serverID
+//        op.dependencyIDs = dependencies
+//        op.saveCount = saveCount
+//        addOperation(operation: op, serverID:serverID)
     }
-    
-    let deletedObjects = NSMutableSet()
-    func deleteObjectOnServer(object:NSManagedObject, context:NSManagedObjectContext) {
         
-        //        let serverID = (delegate?.webStore(store: self, serverIDForObject: object))!
-        //        cacheNode(deleteNodeAtServerID: serverID, entity: object.entity)
-        //        let referenceID = object.entity.name! + "://" + serverID
-        //        deletedObjects.add(referenceID)
-        //        self.deleteCacheObjectForContext(objID: object.objectID, entity: object.entity, context: context)
-        //
-        //        guard let request = delegate?.webStore(store: self, deleteRequestForObject: object) else {
-        //            return
-        //        }
+    let deletedObjects = NSMutableSet()
+    func deleteObjectOnServer(object:NSManagedObject, context:NSManagedObjectContext) throws {
+        
+        let serverID = (delegate?.store(store: self, serverIDForObject: object))!
+        cacheNode(deleteNodeAtServerID: serverID, entity: object.entity)
+        let referenceID = object.entity.name! + "://" + serverID
+        deletedObjects.add(referenceID)
+        self.deleteCacheObjectForContext(objID: object.objectID, entity: object.entity, context: context)
+
+        guard let request = delegate?.store(store: self, deleteRequestForObject: object) else {
+            return
+        }
+        
+       if request.type == .Synchronous {
+           try executeSaveRequest_sync(request, context: context)
+       }
+       else {
+           
+       }
+
+        
         //
         //        let op = MWSDeleteOperation(webStore:self, request:request, entity:object.entity, relationshipKeyPathsForPrefetching:nil)
         //        op.webStoreCache = persistentStoreCache
