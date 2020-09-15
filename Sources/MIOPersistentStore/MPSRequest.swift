@@ -25,11 +25,13 @@ open class MPSRequest : NSObject
     open var resultItems:[Any]?
     
     open var entityName:String
+    open var entityID:String?
     open var entity:NSEntityDescription
     open var predicate:NSPredicate?
     open var sortDescriptors: [NSSortDescriptor]?
     open var limit: Int?
     open var offset: Int?
+    open var changeValues: [String:Any?]?
     
     public init(With entity:NSEntityDescription){
         self.entity = entity

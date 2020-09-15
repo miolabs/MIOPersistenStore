@@ -99,8 +99,7 @@ open class MIOPersistentStore: NSIncrementalStore
         }
         
         self.storeURL = storeURL
-        let uuid = UUID.init()
-        let metadata = [NSStoreUUIDKey: uuid.uuidString, NSStoreTypeKey: type]
+        let metadata = [NSStoreUUIDKey: UUID().uuidString, NSStoreTypeKey: type]
         self.metadata = metadata
     }
     
@@ -179,19 +178,15 @@ open class MIOPersistentStore: NSIncrementalStore
     }
     
     public override func obtainPermanentIDs(for array: [NSManagedObject]) throws -> [NSManagedObjectID] {
-        
-        var newArray = [NSManagedObjectID]()
-        
-        //        for obj in array {
-        //            let serverID = (delegate?.webStore(store: self, serverIDForObject: obj))!
-        ////            if serverID == "" {
-        ////                print("Empty serverID")
-        ////            }
-        //            let objID = newObjectID(for: obj.entity, referenceObject: serverID)
-        //            newArray.append(objID)
-        //        }
-        
-        return newArray
+        return array.map{ obj in
+               let serverID = (delegate?.store(store: self, serverIDForObject: obj))!
+               
+               if serverID == "" { print("Empty serverID") }
+                            
+                let objID = newObjectID( for: obj.entity, referenceObject: serverID )
+
+               return objID
+            }
     }
     
     public override func managedObjectContextDidRegisterObjects(with objectIDs: [NSManagedObjectID]) {
