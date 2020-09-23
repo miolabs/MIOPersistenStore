@@ -130,7 +130,7 @@ open class MIOPersistentStore: NSIncrementalStore
         
         let node = cacheNode(WithServerID: serverID, entity: objectID.entity)!
         if (node.version == 0) {
-            fetchObject(With:serverID, entityName: objectID.entity.name!, context:context)
+           try fetchObject(With:serverID, entityName: objectID.entity.name!, context:context)
         }
         
         return node
@@ -140,12 +140,22 @@ open class MIOPersistentStore: NSIncrementalStore
         
         let serverID = referenceObject(for: objectID) as! String
         let referenceID = objectID.entity.name! + "://" + serverID;
-        let relations = relationshipValuesByReferenceID[referenceID] as? NSMutableDictionary
+        //let relations = relationshipValuesByReferenceID[referenceID] as? NSMutableDictionary
         
         //if (referenceID == null) throw new Error("MWSPersistentStore: Asking objectID without referenceID");
         
-        //let node = (cacheNode(WithServerID:serverID, entity: objectID.entity))!
-        //let relations = node.value(forKey: "relationshipIDs") as? NSMutableDictionary
+        let node = (cacheNode(WithServerID:serverID, entity: objectID.entity))!
+        if (node.version == 0) {
+            try fetchObject(With:serverID, entityName: objectID.entity.name!, context:context!)
+        }
+        
+        var relations = node.value(for: "relationshipIDs") as? NSMutableDictionary
+        
+        if relations == nil {
+            if let response = node.value( for: relationship ) {
+                relations = [ relationship.name: (response as! [NSManagedObjectID]).map{ $0.uriRepresentation().lastPathComponent } ]
+            }
+        }
         
         if (relationship.isToMany == false) {
             guard let relRefID = relations?[relationship.name] as? String else {
@@ -355,7 +365,20 @@ open class MIOPersistentStore: NSIncrementalStore
     // MARK: - Fetching objects from server and cache
     
     var fetchingObjects = [String : Bool]()
-    func fetchObject(With serverID:String, entityName:String, context:NSManagedObjectContext){
+    @discardableResult func fetchObject(With serverID:String, entityName:String, context:NSManagedObjectContext) throws -> Any? {
+        
+        let request = NSFetchRequest<NSManagedObject>(entityName: entityName)
+        request.entity = persistentStoreCoordinator?.managedObjectModel.entitiesByName[entityName]
+        //request.predicate = NSPredicate(format: "identifier == '\(serverID)'")
+
+        if let request = delegate?.store(store: self, fetchRequest: request, serverID: serverID) {
+                  
+                  if request.type == .Synchronous {
+                    return try executeFetchRequest_sync(request, context: context).first
+                  }
+        }
+        
+        return nil
         
         //        if delegate == nil {
         //            return
@@ -469,13 +492,17 @@ open class MIOPersistentStore: NSIncrementalStore
                 
         try request.execute()
         
-        let (objectIDs, _, _) = updateObjects(items: request.resultItems!, for: request.entity, relationships: nil)
+        let (objectIDs, _, _) = updateObjects(items: request.resultItems!, for: request.entity, relationships: request.includeRelationships)
         
         var objects:[NSManagedObject] = []
         for objID in objectIDs {
+            
             self.cacheObjectForContext(objID: objID, entity:objID.entity, context: context, refresh: true)
             let obj = try context.existingObject(with: objID)
-            objects.append(obj)
+
+            if objID.entity.name == request.entityName {
+                objects.append(obj)
+            }
         }
         
         return objects
@@ -529,15 +556,19 @@ open class MIOPersistentStore: NSIncrementalStore
     func saveObjects(request:NSSaveChangesRequest, with context:NSManagedObjectContext) throws {
         
         try request.insertedObjects?.forEach({ (obj) in
-            updateRelationShipsCaches(object: obj)
-            try insertObjectIntoServer(object: obj, context: context)
-            //insertObjectIntoCache(object: obj)
+            if obj.changedValues().count > 0 {
+                updateRelationShipsCaches(object: obj)
+                try insertObjectIntoServer(object: obj, context: context)
+                //insertObjectIntoCache(object: obj)
+            }
         })
         
         try request.updatedObjects?.forEach({ (obj) in
-            updateRelationShipsCaches(object: obj)
-            try updateObjectOnServer(object: obj, context: context)
-            //updateObjectOnCache(object: obj)
+            if obj.changedValues().count > 0 {
+                updateRelationShipsCaches(object: obj)
+                try updateObjectOnServer(object: obj, context: context)
+                //updateObjectOnCache(object: obj)
+            }
         })
         
         try request.deletedObjects?.forEach({ (obj) in
@@ -939,27 +970,29 @@ open class MIOPersistentStore: NSIncrementalStore
                 let newValue = values[serverKey]
                 
                 let attr = prop as! NSAttributeDescription
-                if (attr.attributeType != .dateAttributeType) {
-                    
-                    if newValue != nil
-                        && newValue is NSNull == false {
-                        // check type
-                        switch attr.attributeType {
-                        case .booleanAttributeType, .decimalAttributeType, .doubleAttributeType, .floatAttributeType, .integer16AttributeType, .integer32AttributeType, .integer64AttributeType:
-                            assert(newValue is NSNumber, "[Black Magic] Received Number with incorrect type for key \(key)")
-                            
-                        case .stringAttributeType:
-                            assert(newValue is NSString, "[Black Magic] Received String with incorrect type for key \(key)")
-                            
-                        default:
-                            assert(true)
+                
+                switch  ( attr.attributeType ) {
+                    case .dateAttributeType:
+                        parsedValues[key] = newValue as? Date
+
+                    case .UUIDAttributeType:
+                        parsedValues[key] = newValue is String ? UUID(uuidString: newValue as! String ) : nil
+
+                    default:
+                        if newValue != nil && newValue is NSNull == false {
+                            // check type
+                            switch attr.attributeType {
+                            case .booleanAttributeType, .decimalAttributeType, .doubleAttributeType, .floatAttributeType, .integer16AttributeType, .integer32AttributeType, .integer64AttributeType:
+                                assert(newValue is NSNumber, "[Black Magic] Received Number with incorrect type for key \(key)")
+                                
+                            case .stringAttributeType:
+                                assert(newValue is NSString, "[Black Magic] Received String with incorrect type for key \(key)")
+                                
+                            default:
+                                assert(true)
+                            }
                         }
-                    }
-                    parsedValues[key] = newValue
-                }
-                else {
-                    let date = newValue as? Date
-                    parsedValues[key] = date
+                        parsedValues[key] = newValue
                 }
             }
             else if prop is NSRelationshipDescription {
@@ -995,7 +1028,7 @@ open class MIOPersistentStore: NSIncrementalStore
                     let serverValues = value as! [Any]
                     for relatedItem in serverValues {
                         _ = updateObject(values: relatedItem as! [String:Any], fetchEntity: relEntity.destinationEntity!, objectID: nil, relationshipNodes: relKeyPathNode!, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
-                        let serverID = delegate?.store(store: self, identifierFromItem: value as! [String:Any], fetchEntityName: relEntity.destinationEntity!.name!)
+                        let serverID = delegate?.store(store: self, identifierFromItem: relatedItem as! [String:Any], fetchEntityName: relEntity.destinationEntity!.name!)
                         array.append(serverID!)
                     }
                     

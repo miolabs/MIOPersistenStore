@@ -31,7 +31,10 @@ open class MPSRequest : NSObject
     open var sortDescriptors: [NSSortDescriptor]?
     open var limit: Int?
     open var offset: Int?
+    open var includeRelationships: [String]?
+    
     open var changeValues: [String:Any?]?
+    
     
     public init(With entity:NSEntityDescription){
         self.entity = entity
