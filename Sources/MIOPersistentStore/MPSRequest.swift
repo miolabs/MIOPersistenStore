@@ -12,16 +12,8 @@ import MIOCore
 public typealias NSPredicate = MIOPredicate
 
 
-public enum MPSRequestConnectionType
-{
-    case Synchronous
-    case ASynchronous
-}
-
 open class MPSRequest : NSObject
-{
-    open var type:MPSRequestConnectionType { get { return .Synchronous } }
-    
+{    
     open var resultItems:[Any]?
     
     open var entityName:String
