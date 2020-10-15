@@ -164,21 +164,25 @@ open class MIOPersistentStore: NSIncrementalStore
             
             var relNode = cacheNode(WithServerID: relRefID, entity: relationship.destinationEntity!)
             if relNode == nil {
-                relNode = cacheNode(newNodeWithValues: [String : Any](), atServerID: relRefID, version: 0, entity: relationship.destinationEntity!, objectID: nil)
+                try fetchObject(With:relRefID, entityName: relationship.destinationEntity!.name!, context:context!)
+                relNode = cacheNode(WithServerID: relRefID, entity: relationship.destinationEntity!)
+                // relNode = cacheNode(newNodeWithValues: [String : Any](), atServerID: relRefID, version: 0, entity: relationship.destinationEntity!, objectID: nil)
             }
             
             return relNode!.objectID
         }
         else {
             guard let relRefIDs = relations?[relationship.name] as? [String] else {
-                return NSArray()
+                return NSSet()
             }
             
-            let array = NSMutableArray()
+            let array = NSMutableSet()
             for relRefID in relRefIDs {
                 var relNode = cacheNode(WithServerID: relRefID, entity: relationship.destinationEntity!)
                 if relNode == nil {
-                    relNode = cacheNode(newNodeWithValues: [String : Any](), atServerID: relRefID, version: 0, entity: relationship.destinationEntity!, objectID: nil)
+                    try fetchObject(With:relRefID, entityName: relationship.destinationEntity!.name!, context:context!)
+                    relNode = cacheNode(WithServerID: relRefID, entity: relationship.destinationEntity!)
+//                    relNode = cacheNode(newNodeWithValues: [String : Any](), atServerID: relRefID, version: 0, entity: relationship.destinationEntity!, objectID: nil)
                 }
                 array.add(relNode!.objectID)
             }
