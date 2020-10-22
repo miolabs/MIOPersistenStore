@@ -166,8 +166,8 @@ open class MIOPersistentStore: NSIncrementalStore
             
             var relNode = cacheNode(withIdentifier: relIdentifier, entity: relationship.destinationEntity!)
             if relNode == nil {
-                try fetchObject(With:relIdentifier, entityName: relationship.destinationEntity!.name!, context:context!)
                 relNode = cacheNode(newNodeWithValues: [:],  identifier: relIdentifier, version: 0, entity:relationship.destinationEntity!, objectID: nil)
+                try fetchObject(With:relIdentifier, entityName: relationship.destinationEntity!.name!, context:context!)
             }
             
             return relNode!.objectID
@@ -182,6 +182,7 @@ open class MIOPersistentStore: NSIncrementalStore
                 var relNode = cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
                 if relNode == nil {
                     relNode = cacheNode(newNodeWithValues: [:], identifier: relID, version: 0, entity: relationship.destinationEntity!, objectID: nil)
+                    try fetchObject(With:relID, entityName: relationship.destinationEntity!.name!, context:context!)
                 }
                 array.append(relNode!.objectID)
             }

@@ -227,8 +227,8 @@ class MPSPersistentStoreOperation: Operation
                 if attr.attributeType == .dateAttributeType {
                     let date = newValue as? Date
                     parsedValues[key] = date
-                } else if attr.attributeType == .UUIDAttributeType && newValue is UUID {
-                    parsedValues[key] = (newValue as! UUID).uuidString
+                } else if attr.attributeType == .UUIDAttributeType {
+                    parsedValues[key] = newValue is String ? UUID(uuidString: newValue as! String ) : newValue  // (newValue as! UUID).uuidString
                 }
                 else {
                     if newValue != nil && newValue is NSNull == false {
