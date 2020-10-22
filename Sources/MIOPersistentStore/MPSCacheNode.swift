@@ -6,11 +6,13 @@
 //
 
 import Foundation
-#if os(macOS) || os(Linux)
-import MIOCoreData
-#else
+
+#if APPLE_CORE_DATA
 import CoreData
+#else
+import MIOCoreData
 #endif
+
 
 open class MPSCacheNode : NSObject
 {

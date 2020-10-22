@@ -6,11 +6,20 @@
 //
 
 import Foundation
-import MIOCoreData
 
+#if APPLE_CORE_DATA
+import CoreData
+#else
 import MIOCore
+import MIOCoreData
 public typealias NSPredicate = MIOPredicate
+#endif
 
+
+//#else
+//import MIOCoreData
+
+//#endif
 
 open class MPSRequest : NSObject
 {    
@@ -28,9 +37,20 @@ open class MPSRequest : NSObject
     open var changeValues: [String:Any?]?
     
     
-    public init(With entity:NSEntityDescription){
+    public init(entity:NSEntityDescription){
         self.entity = entity
         self.entityName = entity.name!
+        super.init()
+    }
+    
+    public init(fetchRequest:NSFetchRequest<NSManagedObject>) {
+        entity = fetchRequest.entity!
+        entityName = entity.name!
+        predicate = fetchRequest.predicate
+        sortDescriptors = fetchRequest.sortDescriptors
+        limit = fetchRequest.fetchLimit
+        offset = fetchRequest.fetchOffset
+        includeRelationships = fetchRequest.relationshipKeyPathsForPrefetching
         super.init()
     }
     
