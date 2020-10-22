@@ -7,11 +7,13 @@
 //
 
 import Foundation
-#if os(macOS) || os(Linux)
-import MIOCoreData
-#else
+
+#if APPLE_CORE_DATA
 import CoreData
+#else
+import MIOCoreData
 #endif
+
 
 public protocol MIOPersistentStoreDelegate : NSObjectProtocol
 {
@@ -22,8 +24,8 @@ public protocol MIOPersistentStoreDelegate : NSObjectProtocol
     func store(store: MIOPersistentStore, updateRequestForObject object: NSManagedObject, dependencyIDs:inout [String]) -> MPSRequest?
     func store(store: MIOPersistentStore, deleteRequestForObject object: NSManagedObject) -> MPSRequest?
     
-    func store(store: MIOPersistentStore, serverIDForObject object:NSManagedObject) -> String
-    func store(store: MIOPersistentStore, identifierFromItem item:[String:Any], fetchEntityName: String) -> String
+    func store(store: MIOPersistentStore, identifierForObject object:NSManagedObject) -> UUID?
+    func store(store: MIOPersistentStore, identifierFromItem item:[String:Any], fetchEntityName: String) -> String?
     func store(store: MIOPersistentStore, versionFromItem item:[String:Any], fetchEntityName: String) -> UInt64
     
     //
@@ -56,11 +58,11 @@ public enum MIOPersistentStoreRequestType
     case Delete
 }
 
-public enum MIOPersistentStoreError :Error
+public enum MIOPersistentStoreError : Error
 {
-    case NoStoreURL
-    case InvalidRequest
-    case ServerIDIsNull
+    case noStoreURL
+    case invalidRequest
+    case identifierIsNull
 }
 
 public enum MIOPersistentStoreConnectionType
@@ -71,9 +73,10 @@ public enum MIOPersistentStoreConnectionType
 
 open class MIOPersistentStore: NSIncrementalStore
 {
-    public static var type: String { return "MIOPersistentStore" }
+    //public static var storeType: String { return String(describing: MIOPersistentStore.self) }
+    public static var storeType: String { return "MIOPersistentStore" }
     
-    public override var type: String { return "MIOPersistentStore" }
+    public override var type: String { return MIOPersistentStore.storeType }
     
     public var delegate: MIOPersistentStoreDelegate?        
     
@@ -98,19 +101,18 @@ open class MIOPersistentStore: NSIncrementalStore
     
     // MARK: - NSPersistentStore override
     
-    //    public override init(persistentStoreCoordinator root: NSPersistentStoreCoordinator?, configurationName name: String?, at url: URL, options: [AnyHashable : Any]? = nil) {
-    //
-    //        super.init(persistentStoreCoordinator: root, configurationName: name, at: url, options: options)
-    //    }
+//    public required init(persistentStoreCoordinator root: NSPersistentStoreCoordinator?, configurationName name: String?, at url: URL, options: [AnyHashable : Any]? = nil) {
+//            super.init(persistentStoreCoordinator: root, configurationName: name, at: url, options: options)
+//    }
     
     public override func loadMetadata() throws {
         
         guard let storeURL = url else {
-            throw MIOPersistentStoreError.NoStoreURL
+            throw MIOPersistentStoreError.noStoreURL
         }
         
         self.storeURL = storeURL
-        let metadata = [NSStoreUUIDKey: UUID().uuidString, NSStoreTypeKey: type]
+        let metadata = [NSStoreUUIDKey: UUID().uuidString, NSStoreTypeKey: MIOPersistentStore.storeType]
         self.metadata = metadata
     }
     
@@ -127,7 +129,7 @@ open class MIOPersistentStore: NSIncrementalStore
             return []
             
         default:
-            throw MIOPersistentStoreError.InvalidRequest
+            throw MIOPersistentStoreError.invalidRequest
         }
     }
     
@@ -189,12 +191,12 @@ open class MIOPersistentStore: NSIncrementalStore
     }
     
     public override func obtainPermanentIDs(for array: [NSManagedObject]) throws -> [NSManagedObjectID] {
-        return array.map{ obj in
-            let serverID = (delegate?.store(store: self, serverIDForObject: obj))!
+        return try array.map{ obj in
+            guard let identifier = delegate?.store(store: self, identifierForObject: obj) else {
+                throw MIOPersistentStoreError.identifierIsNull
+            }
             
-            if serverID == "" { print("Empty serverID") }
-            
-            let objID = newObjectID( for: obj.entity, referenceObject: serverID )
+            let objID = newObjectID( for: obj.entity, referenceObject: identifier.uuidString )
             
             return objID
         }
@@ -311,7 +313,9 @@ open class MIOPersistentStore: NSIncrementalStore
     }
     
     
-    let operationQueue = OperationQueue()
+    lazy var operationQueue : OperationQueue = {
+        return OperationQueue()
+    }()
     
     // MARK: - Fetching objects from server and cache
     
@@ -418,6 +422,8 @@ open class MIOPersistentStore: NSIncrementalStore
         //        }
         //
         //        return ids
+        if connectionType == .ASynchronous { return [] }
+
         operationQueue.waitUntilAllOperationsAreFinished()
 
         switch fetchRequest.resultType {
@@ -474,7 +480,10 @@ open class MIOPersistentStore: NSIncrementalStore
     
     // MARK: -  Saving objects in server and caché
     var saveCount = 0
-    let saveOperationQueue = OperationQueue()
+    lazy var saveOperationQueue : OperationQueue = {
+        return OperationQueue()
+    }()
+    
     func saveObjects(request:NSSaveChangesRequest, with context:NSManagedObjectContext) throws {
         
         try request.insertedObjects?.forEach({ (obj) in
@@ -499,17 +508,23 @@ open class MIOPersistentStore: NSIncrementalStore
             //            relationshipValuesByReferenceID.removeObject(forKey: referenceID)
         })
         
-        //uploadToServer();
+        uploadToServer()
         saveCount += 1;
+        
+        if connectionType == .Synchronous { saveOperationQueue.waitUntilAllOperationsAreFinished() }
     }
     
     func insertObjectIntoServer(object:NSManagedObject, context:NSManagedObjectContext) throws {
         
-        let identifier = (delegate?.store(store: self, serverIDForObject: object))!
+        guard let identifier = delegate?.store(store: self, identifierForObject: object) else {
+            throw MIOPersistentStoreError.identifierIsNull
+        }
+        
+        let identifierString = identifier.uuidString
         
         //let attribValues = self.filterOnlyAttributes(fromAllValuesOfManagedObject: object)
         
-        _ = cacheNode(newNodeWithValues: object.changedValues(), identifier: identifier, version: 1, entity: object.entity, objectID: object.objectID)
+        _ = cacheNode(newNodeWithValues: object.changedValues(), identifier: identifierString, version: 1, entity: object.entity, objectID: object.objectID)
         
         cacheObjectForContext(objID: object.objectID, entity:object.entity, context: context, refresh: false)
         
@@ -536,20 +551,25 @@ open class MIOPersistentStore: NSIncrementalStore
             }
         }
         
-        op.serverID = identifier
+        op.serverID = identifierString
         op.dependencyIDs = dependencies
         op.saveCount = saveCount
-        addOperation(operation: op, serverID:identifier)
+        addOperation(operation: op, serverID:identifierString)
     }
     
     func updateObjectOnServer(object:NSManagedObject, context:NSManagedObjectContext) throws {
         
-        let identifier = (delegate?.store(store: self, serverIDForObject: object))!
-        let node = (cacheNode(withIdentifier: identifier, entity: object.entity))!
+        guard let identifier = delegate?.store(store: self, identifierForObject: object) else {
+            throw MIOPersistentStoreError.identifierIsNull
+        }
+        
+        let identifierString = identifier.uuidString
+
+        let node = (cacheNode(withIdentifier: identifierString, entity: object.entity))!
         
         //let attribValues = self.filterOnlyAttributes(fromAllValuesOfManagedObject: object)
         
-        cacheNode(updateNodeWithValues: object.changedValues(), identifier: identifier, version: node.version + 1, entity: object.entity)
+        cacheNode(updateNodeWithValues: object.changedValues(), identifier: identifierString, version: node.version + 1, entity: object.entity)
         
         var dependencies:[String] = []
         guard let request = delegate?.store(store: self, updateRequestForObject: object, dependencyIDs: &dependencies) else {
@@ -576,18 +596,22 @@ open class MIOPersistentStore: NSIncrementalStore
             
         }
         
-        op.serverID = identifier
+        op.serverID = identifierString
         op.dependencyIDs = dependencies
         op.saveCount = saveCount
-        addOperation(operation: op, serverID:identifier)
+        addOperation(operation: op, serverID:identifierString)
     }
     
     let deletedObjects = NSMutableSet()
     func deleteObjectOnServer(object:NSManagedObject, context:NSManagedObjectContext) throws {
         
-        let identifier = (delegate?.store(store: self, serverIDForObject: object))!
-        cacheNode(deleteNodeAtIdentifier: identifier, entity: object.entity)
-        let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier, entity: object.entity)
+        guard let identifier = delegate?.store(store: self, identifierForObject: object) else {
+            throw MIOPersistentStoreError.identifierIsNull
+        }
+        let identifierString = identifier.uuidString
+
+        cacheNode(deleteNodeAtIdentifier: identifierString, entity: object.entity)
+        let referenceID = MPSCacheNode.referenceID(withIdentifier: identifierString, entity: object.entity)
         deletedObjects.add(referenceID)
         self.deleteCacheObjectForContext(objID: object.objectID, entity: object.entity, context: context)
         
@@ -619,8 +643,8 @@ open class MIOPersistentStore: NSIncrementalStore
             }
         }
         
-        op.serverID = identifier
-        addOperation(operation: op, serverID: identifier)
+        op.serverID = identifierString
+        addOperation(operation: op, serverID: identifierString)
     }
     
     var saveOperationsByReferenceID = [String:MPSPersistentStoreOperation]()
