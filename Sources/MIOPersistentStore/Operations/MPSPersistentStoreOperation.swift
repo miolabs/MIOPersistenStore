@@ -103,7 +103,12 @@ class MPSPersistentStoreOperation: Operation
 //            self.uploaded = true
 //        }
         
-        try? request.execute()
+        do {
+            try request.execute()
+        } catch {
+            NSLog( error.localizedDescription )
+        }
+        
         //self.responseResult = request.resultItems
         parseData(result: true, code: 200, data: request.resultItems)
         self.uploading = false

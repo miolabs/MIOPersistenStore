@@ -164,7 +164,7 @@ open class MIOPersistentStore: NSIncrementalStore
             
             var relNode = cacheNode(withIdentifier: relIdentifier, entity: relationship.destinationEntity!)
             if relNode == nil {
-                try fetchObject(With:relRefID, entityName: relationship.destinationEntity!.name!, context:context!)
+                try fetchObject(With:relIdentifier, entityName: relationship.destinationEntity!.name!, context:context!)
                 relNode = cacheNode(newNodeWithValues: [:],  identifier: relIdentifier, version: 0, entity:relationship.destinationEntity!, objectID: nil)
             }
             
@@ -418,8 +418,16 @@ open class MIOPersistentStore: NSIncrementalStore
         //        }
         //
         //        return ids
-        
-        return []
+        operationQueue.waitUntilAllOperationsAreFinished()
+
+        switch fetchRequest.resultType {
+            case .managedObjectIDResultType:
+                return op.objectIDs
+            case .managedObjectResultType:
+                return try op.objectIDs.map{ try context.existingObject(with: $0) }
+            default:
+                return []
+        }
     }
     
     func cacheObjectForContext(objID:NSManagedObjectID, entity:NSEntityDescription, context:NSManagedObjectContext, refresh:Bool) {
