@@ -325,8 +325,45 @@ open class MIOPersistentStore: NSIncrementalStore
         fetchRequest.entity = persistentStoreCoordinator?.managedObjectModel.entitiesByName[entityName]
         //request.predicate = NSPredicate(format: "identifier == '\(serverID)'")
         
-        let request = delegate?.store(store: self, fetchRequest: fetchRequest, serverID: serverID)
-        if request == nil { return nil }
+        guard let request = delegate?.store(store: self, fetchRequest: fetchRequest, serverID: serverID) else {
+            return nil
+        }
+        
+        let op = MPSFetchOperation(store:self, request:request, entity:fetchRequest.entity!, relationshipKeyPathsForPrefetching:fetchRequest.relationshipKeyPathsForPrefetching, identifier: nil)
+        op.completionBlock = {
+            
+            context.performAndWait {
+                for objID in op.insertedObjectIDs {
+                    self.cacheObjectForContext(objID: objID, entity:objID.entity, context: context, refresh: true)
+                }
+                
+                for objID in op.updatedObjectIDs {
+                    self.cacheObjectForContext(objID: objID, entity:objID.entity, context: context, refresh: true)
+                }
+            }
+            
+            //            if completion != nil {
+            //                completion!(op.objectIDs, op.insertedObjectIDs, op.updatedObjectIDs)
+            //            }
+        }
+        
+        operationQueue.addOperation(op)
+        
+        if connectionType == .ASynchronous { return [] }
+        
+        operationQueue.waitUntilAllOperationsAreFinished()
+        
+        if fetchRequest.resultType == .managedObjectIDResultType { return op.objectIDs }
+        
+        if fetchRequest.resultType == .managedObjectResultType {
+            
+            var objs:[NSManagedObject] = []
+            for objID in op.objectIDs {
+                let obj = try context.existingObject(with: objID)
+                objs.append(obj)
+            }
+            return objs
+        }
         
         return nil
         
