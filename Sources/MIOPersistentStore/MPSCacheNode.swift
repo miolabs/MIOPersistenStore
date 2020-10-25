@@ -42,6 +42,7 @@ open class MPSCacheNode : NSObject
         _values = values
         _node = nil
         _attributeValues = nil
+        _version = version
     }
     
     var _node:NSIncrementalStoreNode?
