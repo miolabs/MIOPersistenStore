@@ -7,6 +7,7 @@
 
 import Foundation
 
+import MIOCore
 #if APPLE_CORE_DATA
 import CoreData
 #else
@@ -210,7 +211,6 @@ class MPSPersistentStoreOperation: Operation
     private func checkRelationships(values : [String : Any], entity:NSEntityDescription, relationshipNodes : NSMutableDictionary?, objectIDs:NSMutableSet, insertedObjectIDs:NSMutableSet, updatedObjectIDs:NSMutableSet) throws -> [String : Any] {
         
         var parsedValues = [String:Any]()
-        let relationshipsIDs = NSMutableDictionary()
         
         for key in entity.propertiesByName.keys {
             
@@ -229,8 +229,9 @@ class MPSPersistentStoreOperation: Operation
                     parsedValues[key] = date
                 } else if attr.attributeType == .UUIDAttributeType {
                     parsedValues[key] = newValue is String ? UUID(uuidString: newValue as! String ) : newValue  // (newValue as! UUID).uuidString
-                }
-                else {
+                } else if attr.attributeType == .decimalAttributeType {
+                    parsedValues[key] = MIOCoreDecimalValue( newValue, nil )
+                } else {
                     if newValue != nil && newValue is NSNull == false {
                         // check type
                         switch attr.attributeType {

@@ -138,8 +138,9 @@ open class MIOPersistentStore: NSIncrementalStore
     public override func newValuesForObject(with objectID: NSManagedObjectID, with context: NSManagedObjectContext) throws -> NSIncrementalStoreNode {
         
         let identifier = referenceObject(for: objectID) as! String
+        let node = cacheNode(withIdentifier: identifier, entity: objectID.entity) ??
+                   cacheNode(newNodeWithValues: [:], identifier: identifier, version: 0, entity: objectID.entity, objectID: objectID)
         
-        let node = cacheNode(withIdentifier: identifier, entity: objectID.entity)!
         if (node.version == 0) {
             try fetchObject(With:identifier, entityName: objectID.entity.name!, context:context)
         }
