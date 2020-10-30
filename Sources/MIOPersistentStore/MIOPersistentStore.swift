@@ -520,7 +520,11 @@ open class MIOPersistentStore: NSIncrementalStore
     // MARK: -  Saving objects in server and caché
     var saveCount = 0
     lazy var saveOperationQueue : OperationQueue = {
-        return OperationQueue()
+        var queue = OperationQueue()
+        
+        queue.maxConcurrentOperationCount = 1
+        
+        return queue
     }()
     
     func saveObjects(request:NSSaveChangesRequest, with context:NSManagedObjectContext) throws {

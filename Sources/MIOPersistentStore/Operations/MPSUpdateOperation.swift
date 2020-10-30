@@ -14,12 +14,17 @@ class MPSUpdateOperation: MPSPersistentStoreOperation
     override func responseDidReceive(response:MPSRequestResponse) throws {
         if response.result == true {
             NSLog("Update!")
-            let values = response.items as! [String : Any]
-            let version = self.store.versionForItem(values, entityName: entity.name!)
-            if version > nodeVersion {
+            
+            if let values = response.items as? [Any] {
                 let relationships = self.relationshipKeyPathsForPrefetching;
-                (self.objectIDs, self.insertedObjectIDs, self.updatedObjectIDs) = try updateObjects(items: [values], for: self.entity, relationships:relationships)
+                (self.objectIDs, self.insertedObjectIDs, self.updatedObjectIDs) = try updateObjects(items: values, for: self.entity, relationships:relationships)
             }
+
+//            let version = self.store.versionForItem(values, entityName: entity.name!)
+//            if version > nodeVersion {
+//                let relationships = self.relationshipKeyPathsForPrefetching;
+//                (self.objectIDs, self.insertedObjectIDs, self.updatedObjectIDs) = try updateObjects(items: [values], for: self.entity, relationships:relationships)
+//            }
         }
     }
 }
