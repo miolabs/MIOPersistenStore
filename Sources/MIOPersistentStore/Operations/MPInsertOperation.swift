@@ -11,8 +11,8 @@ class MPSInsertOperation: MPSPersistentStoreOperation
 {
     override func responseDidReceive(response:MPSRequestResponse) throws {
         if response.result == true {
-            NSLog("Inserted!")
             let values = response.items as! [[String : Any]]
+            NSLog("Inserted: \(entity.name!), id = \(values[0]["identifier"]!)")
             let version = self.store.versionForItem(values[0], entityName: entity.name!)
             if version > 1 {
                 let relationships = self.relationshipKeyPathsForPrefetching;
