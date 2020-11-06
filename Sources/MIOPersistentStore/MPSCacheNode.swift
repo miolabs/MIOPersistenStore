@@ -39,7 +39,7 @@ open class MPSCacheNode : NSObject
     }
     
     func update(withValues values:[String:Any], version: UInt64) {
-        _values = values
+        _values.merge(values, uniquingKeysWith: { (_, new) in new } )
         _node = nil
         _attributeValues = nil
         _version = version
