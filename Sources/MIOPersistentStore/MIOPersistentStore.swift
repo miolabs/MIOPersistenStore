@@ -220,8 +220,9 @@ open class MIOPersistentStore: NSIncrementalStore
     let cacheNodeQueue = DispatchQueue(label: "\(String(describing: Bundle.main.bundleIdentifier)).mws.cache-queue")
     
     func cacheNode(withIdentifier identifier:String, entity:NSEntityDescription) -> MPSCacheNode? {
-        
+                        
         let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier, entity: entity)
+        print("CacheNode Query: \(referenceID)")
         var node:MPSCacheNode?
         cacheNodeQueue.sync {
             node = nodesByReferenceID[referenceID]
@@ -234,6 +235,8 @@ open class MIOPersistentStore: NSIncrementalStore
         let objID = objectID ?? newObjectID(for: entity, referenceObject: identifier)
         //let node = NSIncrementalStoreNode(objectID: objID, withValues: values, version: version)
         let node = MPSCacheNode(identifier:identifier, entity: entity, withValues: values, version: version, objectID: objID)
+        
+        print("CacheNode Insert: \(node.referenceID)")
         
         cacheNodeQueue.sync {
             nodesByReferenceID[node.referenceID] = node
@@ -253,6 +256,8 @@ open class MIOPersistentStore: NSIncrementalStore
                 
         let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier, entity: entity)
         
+        print("CacheNode Insert: \(referenceID)")
+        
         cacheNodeQueue.sync {
             nodesByReferenceID[referenceID] = node
             //            if enableLog {
@@ -269,6 +274,8 @@ open class MIOPersistentStore: NSIncrementalStore
         
         let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier, entity: entity)
         
+        print("CacheNode Update: \(referenceID)")
+        
         cacheNodeQueue.sync {
             let node = nodesByReferenceID[referenceID]
             node?.update(withValues: values, version: version)
@@ -282,6 +289,8 @@ open class MIOPersistentStore: NSIncrementalStore
     func cacheNode(deleteNodeAtIdentifier identifier:String, entity:NSEntityDescription) {
         
         let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier, entity: entity)
+        print("CacheNode Delete: \(referenceID)")
+        
         cacheNodeQueue.sync {
             nodesByReferenceID.removeValue(forKey: referenceID)
             //            relationshipValuesByReferenceID.removeObject(forKey: referenceID)

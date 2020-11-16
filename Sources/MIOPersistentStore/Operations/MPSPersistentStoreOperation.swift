@@ -166,12 +166,16 @@ class MPSPersistentStoreOperation: Operation
 
     func updateObject(values:[String:Any], fetchEntity:NSEntityDescription, objectID:NSManagedObjectID?, relationshipNodes:NSMutableDictionary?, objectIDs:NSMutableSet, insertedObjectIDs:NSMutableSet, updatedObjectIDs:NSMutableSet) throws {
         
-//        var entityName = (store.delegate?.webStore(store: webStore, serverEntityNameForItem:values, entityName:fetchEntity.name!))!
+        var entity = fetchEntity
+        let entityName = values["classname"] as? String ?? fetchEntity.name!
+        if entityName != fetchEntity.name {
+            entity = fetchEntity.managedObjectModel.entitiesByName[entityName]!
+        }
 //        if fetchEntity.subentities.first == nil {
 //            entityName = fetchEntity.name!
 //        }
 //        
-//        var entity = fetchEntity;
+        
 //        
 //        if entity.name != entityName {
 //            let ctx = (webStore.delegate?.mainContextForWebStore(store: webStore))!
