@@ -111,6 +111,7 @@ class MPSPersistentStoreOperation: Operation
             try parseData(result: true, code: 200, data: request.resultItems)
         } catch {
             NSLog( error.localizedDescription )
+            try? parseData(result: false, code: 500, data: nil)
         }
         
         self.uploading = false
@@ -126,14 +127,12 @@ class MPSPersistentStoreOperation: Operation
     }
     
     override var isFinished: Bool{
-        return (self.uploaded
-                && self.responseResult == true)
-                || self.isCancelled
+        return self.uploaded || self.isCancelled
     }
     
     func parseData(result:Bool, code:Int, data:Any?) throws {
         //let response = (self.store.delegate?.webStore(store: self.webStore, requestDidFinishWithResult:result, code: code, data: data))!
-        let response = MPSRequestResponse(result: true, items: data, timestamp: TimeInterval())
+        let response = MPSRequestResponse(result: result, items: data, timestamp: TimeInterval())
 
         self.responseCode = code
         self.responseData = data
@@ -285,7 +284,7 @@ class MPSPersistentStoreOperation: Operation
                     for relatedItem in serverValues {
                         try updateObject(values: relatedItem as! [String:Any], fetchEntity: relEntity.destinationEntity!, objectID: nil, relationshipNodes: relKeyPathNode!, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
                         //let serverID = webStore.delegate?.webStore(store: webStore, serverIDForItem: relatedItem, entityName: relEntity.destinationEntity!.name!)
-                        guard let identifierString = store.identifierForItem(value as! [String:Any], entityName: relEntity.destinationEntity!.name!) else {
+                        guard let identifierString = store.identifierForItem(relatedItem as! [String:Any], entityName: relEntity.destinationEntity!.name!) else {
                             throw MIOPersistentStoreError.identifierIsNull
                         }
                         array.append(identifierString)
