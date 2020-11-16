@@ -15,6 +15,7 @@ class MPSUpdateOperation: MPSPersistentStoreOperation
         if response.result == true {
             
             if let values = response.items as? [[String:Any]] {
+                if values.count == 0 { return }
                 NSLog("Updated: \(entity.name!), id = \(values[0]["identifier"]!)")
                 let relationships = self.relationshipKeyPathsForPrefetching;
                 (self.objectIDs, self.insertedObjectIDs, self.updatedObjectIDs) = try updateObjects(items: values, for: self.entity, relationships:relationships)
