@@ -167,7 +167,7 @@ class MPSPersistentStoreOperation: Operation
     func updateObject(values:[String:Any], fetchEntity:NSEntityDescription, objectID:NSManagedObjectID?, relationshipNodes:NSMutableDictionary?, objectIDs:NSMutableSet, insertedObjectIDs:NSMutableSet, updatedObjectIDs:NSMutableSet) throws {
         
         var entity = fetchEntity
-        let entityName = values["classname"] as? String ?? fetchEntity.name!
+        let entityName = values["classname"] as! String // ?? fetchEntity.name!
         if entityName != fetchEntity.name {
             entity = fetchEntity.managedObjectModel.entitiesByName[entityName]!
         }
