@@ -27,6 +27,8 @@ class MPSPersistentStoreOperation: Operation
     var entity:NSEntityDescription
     var relationshipKeyPathsForPrefetching:[String]
     var serverID:String?
+    var moc: NSManagedObjectContext?
+
     
     var saveCount = 0
     var dependencyIDs:[String] = []
@@ -34,7 +36,8 @@ class MPSPersistentStoreOperation: Operation
     var responseResult = false
     var responseCode:Int = 0
     var responseData:Any?
-        
+    var responseError:Error?
+            
     var objectIDs = [NSManagedObjectID]()
     var insertedObjectIDs = [NSManagedObjectID]()
     var updatedObjectIDs = [NSManagedObjectID]()
@@ -108,10 +111,10 @@ class MPSPersistentStoreOperation: Operation
         do {
             try request.execute()
             //self.responseResult = request.resultItems
-            try parseData(result: true, code: 200, data: request.resultItems)
+            try parseData(result: true, code: 200, data: request.resultItems, error: nil )
         } catch {
             NSLog( error.localizedDescription )
-            try? parseData(result: false, code: 500, data: nil)
+            try? parseData(result: false, code: -1, data: nil, error: error )
         }
         
         self.uploading = false
@@ -130,12 +133,13 @@ class MPSPersistentStoreOperation: Operation
         return self.uploaded || self.isCancelled
     }
     
-    func parseData(result:Bool, code:Int, data:Any?) throws {
+    func parseData(result:Bool, code:Int, data:Any?, error: Error?) throws {
         //let response = (self.store.delegate?.webStore(store: self.webStore, requestDidFinishWithResult:result, code: code, data: data))!
         let response = MPSRequestResponse(result: result, items: data, timestamp: TimeInterval())
 
         self.responseCode = code
         self.responseData = data
+        self.responseError = error
         self.responseResult = response.result
 
         //self.store.didParseDataInOperation(self, result: data)
@@ -167,9 +171,22 @@ class MPSPersistentStoreOperation: Operation
     func updateObject(values:[String:Any], fetchEntity:NSEntityDescription, objectID:NSManagedObjectID?, relationshipNodes:NSMutableDictionary?, objectIDs:NSMutableSet, insertedObjectIDs:NSMutableSet, updatedObjectIDs:NSMutableSet) throws {
         
         var entity = fetchEntity
+        var entityValues: [String:Any] = values
         let entityName = values["classname"] as! String // ?? fetchEntity.name!
         if entityName != fetchEntity.name {
             entity = fetchEntity.managedObjectModel.entitiesByName[entityName]!
+
+            guard let identifierString = store.identifierForItem(values, entityName: entityName) else {
+                throw MIOPersistentStoreError.identifierIsNull
+            }
+            
+            let fr =  NSFetchRequest<NSManagedObject>(entityName: entityName)
+            fr.entity = entity
+            let new_request = store.delegate!.store(store: store, fetchRequest: fr, serverID: identifierString)!
+            
+            try new_request.execute( )
+            
+            entityValues = new_request.resultItems!.first as! [String:Any]
         }
 //        if fetchEntity.subentities.first == nil {
 //            entityName = fetchEntity.name!
@@ -183,7 +200,7 @@ class MPSPersistentStoreOperation: Operation
 //        }
         
         // Check the objects inside values
-        let parsedValues = try checkRelationships(values:values, entity: entity, relationshipNodes: relationshipNodes, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
+        let parsedValues = try checkRelationships(values:entityValues, entity: entity, relationshipNodes: relationshipNodes, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
         
         guard let identifierString = store.identifierForItem(parsedValues, entityName: fetchEntity.name!) else {
             throw MIOPersistentStoreError.identifierIsNull
@@ -213,7 +230,7 @@ class MPSPersistentStoreOperation: Operation
     
     private func checkRelationships(values : [String : Any], entity:NSEntityDescription, relationshipNodes : NSMutableDictionary?, objectIDs:NSMutableSet, insertedObjectIDs:NSMutableSet, updatedObjectIDs:NSMutableSet) throws -> [String : Any] {
         
-        var parsedValues = [String:Any]()
+        var parsedValues: [ String: Any ] = [ "classname": values[ "classname" ] as! String ]
         
         for key in entity.propertiesByName.keys {
             
@@ -228,8 +245,13 @@ class MPSPersistentStoreOperation: Operation
                 
                 let attr = prop as! NSAttributeDescription
                 if attr.attributeType == .dateAttributeType {
-                    let date = newValue as? Date
-                    parsedValues[key] = date
+                    if let date = newValue as? Date {
+                        parsedValues[key] = date
+                    } else {
+                        if let dateString = newValue as? String {
+                            parsedValues[key] = parse_date( dateString )
+                        }
+                    }
                 } else if attr.attributeType == .UUIDAttributeType {
                     parsedValues[key] = newValue is String ? UUID(uuidString: newValue as! String ) : newValue  // (newValue as! UUID).uuidString
                 } else if attr.attributeType == .decimalAttributeType {

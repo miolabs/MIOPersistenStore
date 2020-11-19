@@ -142,12 +142,24 @@ open class MIOPersistentStore: NSIncrementalStore
                    cacheNode(newNodeWithValues: [:], identifier: identifier, version: 0, entity: objectID.entity, objectID: objectID)
         
         if (node.version == 0) {
-            try fetchObject(With:identifier, entityName: objectID.entity.name!, context:context)
+            try checkForDerivated( node, objectID.entity.name!, identifier, context )
         }
         
         let storeNode = try node.storeNode()
         return storeNode
     }
+
+    
+    func checkForDerivated ( _ node: MPSCacheNode, _ entityName: String, _ identifier: String, _ context: NSManagedObjectContext ) throws {
+        try fetchObject(With:identifier, entityName: entityName, context:context)
+//
+//        let derivatedEntity = node._values[ "classname" ] as? String
+//
+//        if derivatedEntity != nil && derivatedEntity! != entityName {
+//            try fetchObject(With:identifier, entityName: derivatedEntity!, context:context)
+//        }
+    }
+
     
     public override func newValue(forRelationship relationship: NSRelationshipDescription, forObjectWith objectID: NSManagedObjectID, with context: NSManagedObjectContext?) throws -> Any {
         
@@ -155,7 +167,8 @@ open class MIOPersistentStore: NSIncrementalStore
 
         let node = (cacheNode(withIdentifier: identifier, entity: objectID.entity))!
         if node.version == 0 {
-            try fetchObject(With:identifier, entityName: objectID.entity.name!, context:context!)
+            try checkForDerivated( node, objectID.entity.name!, identifier, context! )
+            // try fetchObject(With:identifier, entityName: objectID.entity.name!, context:context!)
         }
         
         let value = try node.value(forRelationship: relationship)
@@ -168,7 +181,9 @@ open class MIOPersistentStore: NSIncrementalStore
             var relNode = cacheNode(withIdentifier: relIdentifier, entity: relationship.destinationEntity!)
             if relNode == nil {
                 relNode = cacheNode(newNodeWithValues: [:],  identifier: relIdentifier, version: 0, entity:relationship.destinationEntity!, objectID: nil)
-                try fetchObject(With:relIdentifier, entityName: relationship.destinationEntity!.name!, context:context!)
+                // try fetchObject(With:relIdentifier, entityName: relationship.destinationEntity!.name!, context:context!)
+                try checkForDerivated( relNode!, relationship.destinationEntity!.name!, relIdentifier, context! )
+
             }
             
             return relNode!.objectID
@@ -183,7 +198,8 @@ open class MIOPersistentStore: NSIncrementalStore
                 var relNode = cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
                 if relNode == nil {
                     relNode = cacheNode(newNodeWithValues: [:], identifier: relID, version: 0, entity: relationship.destinationEntity!, objectID: nil)
-                    try fetchObject(With:relID, entityName: relationship.destinationEntity!.name!, context:context!)
+                    // try fetchObject(With:relID, entityName: relationship.destinationEntity!.name!, context:context!)
+                    try checkForDerivated( relNode!, relationship.destinationEntity!.name!, relID, context! )
                 }
                 array.append(relNode!.objectID)
             }
@@ -291,7 +307,7 @@ open class MIOPersistentStore: NSIncrementalStore
         let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier, entity: entity)
         print("CacheNode Delete: \(referenceID)")
         
-        cacheNodeQueue.sync {
+        _ = cacheNodeQueue.sync {
             nodesByReferenceID.removeValue(forKey: referenceID)
             //            relationshipValuesByReferenceID.removeObject(forKey: referenceID)
             //            if enableLog {
@@ -359,6 +375,7 @@ open class MIOPersistentStore: NSIncrementalStore
             //            }
         }
         
+        op.moc = context
         operationQueue.addOperation(op)
         
         if connectionType == .ASynchronous { return [] }
@@ -424,6 +441,7 @@ open class MIOPersistentStore: NSIncrementalStore
             //                completion!(op.objectIDs, op.insertedObjectIDs, op.updatedObjectIDs)
             //            }
         }
+        op.moc = context
         
         operationQueue.addOperation(op)
         //}
@@ -537,10 +555,11 @@ open class MIOPersistentStore: NSIncrementalStore
     }()
     
     func saveObjects(request:NSSaveChangesRequest, with context:NSManagedObjectContext) throws {
+        var insertError: Error?
         
         try request.insertedObjects?.forEach({ (obj) in
             if obj.changedValues().count > 0 {
-                try insertObjectIntoServer(object: obj, context: context)
+                try insertObjectIntoServer(object: obj, context: context, onError: { insertError = $0 } )
                 //insertObjectIntoCache(object: obj)
             }
         })
@@ -563,10 +582,13 @@ open class MIOPersistentStore: NSIncrementalStore
         uploadToServer()
         saveCount += 1;
         
-        if connectionType == .Synchronous { saveOperationQueue.waitUntilAllOperationsAreFinished() }
+        if connectionType == .Synchronous {
+            saveOperationQueue.waitUntilAllOperationsAreFinished()
+            if insertError != nil { throw insertError! }
+        }
     }
     
-    func insertObjectIntoServer(object:NSManagedObject, context:NSManagedObjectContext) throws {
+    func insertObjectIntoServer(object:NSManagedObject, context:NSManagedObjectContext, onError: @escaping ( _ error: Error ) -> Void ) throws {
         
         guard let identifier = delegate?.store(store: self, identifierForObject: object) else {
             throw MIOPersistentStoreError.identifierIsNull
@@ -588,22 +610,29 @@ open class MIOPersistentStore: NSIncrementalStore
         let op = MPSInsertOperation(store:self, request:request, entity:object.entity, relationshipKeyPathsForPrefetching:nil, identifier: nil)
         //op.webStoreCache = persistentStoreCache
         op.completionBlock = {
-            context.performAndWait {
-                for objID in op.insertedObjectIDs {
-                    self.cacheObjectForContext(objID: objID, entity:object.entity, context: context, refresh:true)
+            if op.responseError != nil {
+                onError( op.responseError! )
+                self.operationQueue.cancelAllOperations()
+            }
+            else {
+                context.performAndWait {
+                    for objID in op.insertedObjectIDs {
+                        self.cacheObjectForContext(objID: objID, entity:object.entity, context: context, refresh:true)
+                    }
+                    
+                    for objID in op.updatedObjectIDs {
+                        self.cacheObjectForContext(objID: objID, entity:object.entity, context: context, refresh: true)
+                    }
                 }
                 
-                for objID in op.updatedObjectIDs {
-                    self.cacheObjectForContext(objID: objID, entity:object.entity, context: context, refresh: true)
+                if op.responseCode != 200 {
+                    NotificationCenter.default.post(name: NSNotification.Name(rawValue: "MWSPersistentStoreDidUpdateError"), object: object.objectID, userInfo:op.responseData as? [AnyHashable : Any])
                 }
-            }
-            
-            if op.responseCode != 200 {
-                NotificationCenter.default.post(name: NSNotification.Name(rawValue: "MWSPersistentStoreDidUpdateError"), object: object.objectID, userInfo:op.responseData as? [AnyHashable : Any])
             }
         }
         
         op.serverID = identifierString
+        op.moc = context
         op.dependencyIDs = dependencies
         op.saveCount = saveCount
         addOperation(operation: op, serverID:identifierString)
@@ -649,6 +678,7 @@ open class MIOPersistentStore: NSIncrementalStore
         }
         
         op.serverID = identifierString
+        op.moc = context
         op.dependencyIDs = dependencies
         op.saveCount = saveCount
         addOperation(operation: op, serverID:identifierString)
@@ -696,6 +726,7 @@ open class MIOPersistentStore: NSIncrementalStore
         }
         
         op.serverID = identifierString
+        op.moc = context
         addOperation(operation: op, serverID: identifierString)
     }
     
