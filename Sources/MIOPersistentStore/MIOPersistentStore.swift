@@ -78,7 +78,7 @@ open class MIOPersistentStore: NSIncrementalStore
     
     public override var type: String { return MIOPersistentStore.storeType }
     
-    public var delegate: MIOPersistentStoreDelegate?        
+    public var delegate: MIOPersistentStoreDelegate?
     
     open var connectionType = MIOPersistentStoreConnectionType.Synchronous
     
