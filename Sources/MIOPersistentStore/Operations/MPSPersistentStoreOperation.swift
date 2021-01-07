@@ -76,7 +76,7 @@ class MPSPersistentStoreOperation: Operation
     }
         
     init(store:MIOPersistentStore, request:MPSRequest, entity:NSEntityDescription, relationshipKeyPathsForPrefetching:[String]?, identifier:String?) {
-        _identifier = identifier ?? UUID().uuidString
+        _identifier = identifier ?? UUID().uuidString.lowercased( )
         self.store = store
         self.request = request
         self.entity = entity
@@ -253,7 +253,7 @@ class MPSPersistentStoreOperation: Operation
                         }
                     }
                 } else if attr.attributeType == .UUIDAttributeType {
-                    parsedValues[key] = newValue is String ? UUID(uuidString: newValue as! String ) : newValue  // (newValue as! UUID).uuidString
+                    parsedValues[key] = newValue is String ? UUID(uuidString: newValue as! String ) : newValue  // (newValue as! UUID).uuidString.upperCased( )
                 } else if attr.attributeType == .decimalAttributeType {
                     parsedValues[key] = MIOCoreDecimalValue( newValue, nil )
                 } else {
