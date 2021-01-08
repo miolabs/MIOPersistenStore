@@ -187,7 +187,7 @@ final class CoreDataTests: XCTestCase, MIOPersistentStoreDelegate
                     }
 
                     if let identifier = obj.value(forKey: "identifier") as? UUID {
-                        values[rel.name] = identifier.uuidString
+                        values[rel.name] = identifier.uuidString.lowercased( )
                     }
                 }
                 else {
@@ -199,7 +199,7 @@ final class CoreDataTests: XCTestCase, MIOPersistentStoreDelegate
                     var relationIDs:[String] = []
                     for obj in objects {
                         if let identifier = obj.value(forKey: "identifier") as? UUID {
-                            relationIDs.append(identifier.uuidString)
+                            relationIDs.append(identifier.uuidString.lowercased( ))
                         }
                     }
                     
@@ -217,7 +217,7 @@ final class CoreDataTests: XCTestCase, MIOPersistentStoreDelegate
         switch type
         {
             case .UUIDAttributeType:
-                return (value as! UUID).uuidString
+                return (value as! UUID).uuidString.lowercased( )
             
             case .dateAttributeType:
                 return ISO8601DateFormatter().string(from: value as! Date)
