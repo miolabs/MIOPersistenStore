@@ -13,6 +13,7 @@ import CoreData
 import MIOCore
 import MIOCoreData
 public typealias NSPredicate = MIOPredicate
+public typealias NSSortDescriptor = MIOSortDescriptor
 #endif
 
 
