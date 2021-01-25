@@ -76,7 +76,7 @@ class MPSPersistentStoreOperation: Operation
     }
         
     init(store:MIOPersistentStore, request:MPSRequest, entity:NSEntityDescription, relationshipKeyPathsForPrefetching:[String]?, identifier:String?) {
-        _identifier = identifier ?? UUID().uuidString.lowercased( )
+        _identifier = identifier ?? UUID().uuidString.uppercased()
         self.store = store
         self.request = request
         self.entity = entity

@@ -112,7 +112,7 @@ open class MIOPersistentStore: NSIncrementalStore
         }
         
         self.storeURL = storeURL
-        let metadata = [NSStoreUUIDKey: UUID().uuidString.lowercased(), NSStoreTypeKey: MIOPersistentStore.storeType]
+        let metadata = [NSStoreUUIDKey: UUID().uuidString.uppercased(), NSStoreTypeKey: MIOPersistentStore.storeType]
         self.metadata = metadata
     }
     
@@ -218,7 +218,7 @@ open class MIOPersistentStore: NSIncrementalStore
                 throw MIOPersistentStoreError.identifierIsNull
             }
             
-            let objID = newObjectID( for: obj.entity, referenceObject: identifier.uuidString.lowercased() )
+            let objID = newObjectID( for: obj.entity, referenceObject: identifier.uuidString.uppercased() )
             
             return objID
         }
@@ -241,7 +241,7 @@ open class MIOPersistentStore: NSIncrementalStore
     
     func cacheNode(withIdentifier identifier:String, entity:NSEntityDescription) -> MPSCacheNode? {
                         
-        let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier.lowercased(), entity: entity)
+        let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier.uppercased(), entity: entity)
         print("CacheNode Query: \(referenceID)")
         var node:MPSCacheNode?
         cacheNodeQueue.sync {
@@ -252,7 +252,7 @@ open class MIOPersistentStore: NSIncrementalStore
     
     func cacheNode(newNodeWithValues values:[String:Any], identifier: String, version:UInt64, entity:NSEntityDescription, objectID:NSManagedObjectID?) -> MPSCacheNode {
             
-        let id = identifier.lowercased()
+        let id = identifier.uppercased()
         let objID = objectID ?? newObjectID(for: entity, referenceObject: id)
         //let node = NSIncrementalStoreNode(objectID: objID, withValues: values, version: version)
         let node = MPSCacheNode(identifier:id, entity: entity, withValues: values, version: version, objectID: objID)
@@ -293,7 +293,7 @@ open class MIOPersistentStore: NSIncrementalStore
     
     func cacheNode(updateNodeWithValues values:[String:Any], identifier:String, version:UInt64, entity:NSEntityDescription) {
         
-        let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier.lowercased(), entity: entity)
+        let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier.uppercased(), entity: entity)
         
         print("CacheNode Update: \(referenceID)")
         
@@ -308,7 +308,7 @@ open class MIOPersistentStore: NSIncrementalStore
     }
     
     func cacheNode(deleteNodeAtIdentifier identifier:String, entity:NSEntityDescription) {
-        let id = identifier.lowercased()
+        let id = identifier.uppercased()
         let referenceID = MPSCacheNode.referenceID(withIdentifier: id, entity: entity)
         print("CacheNode Delete: \(referenceID)")
         
@@ -326,7 +326,7 @@ open class MIOPersistentStore: NSIncrementalStore
     }
     
     func cacheNode(deletingNodeAtIdentifier identifier:String, entity:NSEntityDescription) -> Bool {
-        let id = identifier.lowercased()
+        let id = identifier.uppercased()
         var deleting = false
         let referenceID = MPSCacheNode.referenceID(withIdentifier: id, entity: entity)
         cacheNodeQueue.sync {
@@ -599,7 +599,7 @@ open class MIOPersistentStore: NSIncrementalStore
             throw MIOPersistentStoreError.identifierIsNull
         }
         
-        let identifierString = identifier.uuidString.lowercased()
+        let identifierString = identifier.uuidString.uppercased()
         
         //let attribValues = self.filterOnlyAttributes(fromAllValuesOfManagedObject: object)
         
@@ -649,7 +649,7 @@ open class MIOPersistentStore: NSIncrementalStore
             throw MIOPersistentStoreError.identifierIsNull
         }
         
-        let identifierString = identifier.uuidString.lowercased()
+        let identifierString = identifier.uuidString.uppercased()
 
         let node = (cacheNode(withIdentifier: identifierString, entity: object.entity))!
         
@@ -695,7 +695,7 @@ open class MIOPersistentStore: NSIncrementalStore
         guard let identifier = delegate?.store(store: self, identifierForObject: object) else {
             throw MIOPersistentStoreError.identifierIsNull
         }
-        let identifierString = identifier.uuidString.lowercased()
+        let identifierString = identifier.uuidString.uppercased()
 
         cacheNode(deleteNodeAtIdentifier: identifierString, entity: object.entity)
         let referenceID = MPSCacheNode.referenceID(withIdentifier: identifierString, entity: object.entity)
