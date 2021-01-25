@@ -254,6 +254,9 @@ class MPSPersistentStoreOperation: Operation
                     }
                 } else if attr.attributeType == .UUIDAttributeType {
                     parsedValues[key] = newValue is String ? UUID(uuidString: newValue as! String ) : newValue  // (newValue as! UUID).uuidString.upperCased( )
+                } else if attr.attributeType == .transformableAttributeType {
+                    parsedValues[key] = newValue == nil ? nil
+                                      : try JSONSerialization.jsonObject(with: (newValue as! String).data(using: .utf8)!, options: [ .fragmentsAllowed ])
                 } else if attr.attributeType == .decimalAttributeType {
                     parsedValues[key] = MIOCoreDecimalValue( newValue, nil )
                 } else {
