@@ -150,7 +150,7 @@ open class MIOPersistentStore: NSIncrementalStore
     }
 
     
-    func checkForDerivated ( _ node: MPSCacheNode, _ entityName: String, _ identifier: String, _ context: NSManagedObjectContext ) throws {
+    func checkForDerivated ( _ node: MPSCacheNode?, _ entityName: String, _ identifier: String, _ context: NSManagedObjectContext ) throws {
         try fetchObject(With:identifier, entityName: entityName, context:context)
 //
 //        let derivatedEntity = node._values[ "classname" ] as? String
@@ -180,10 +180,10 @@ open class MIOPersistentStore: NSIncrementalStore
             
             var relNode = cacheNode(withIdentifier: relIdentifier, entity: relationship.destinationEntity!)
             if relNode == nil {
-                relNode = cacheNode(newNodeWithValues: [:],  identifier: relIdentifier, version: 0, entity:relationship.destinationEntity!, objectID: nil)
+                // relNode = cacheNode(newNodeWithValues: [:],  identifier: relIdentifier, version: 0, entity:relationship.destinationEntity!, objectID: nil)
                 // try fetchObject(With:relIdentifier, entityName: relationship.destinationEntity!.name!, context:context!)
-                try checkForDerivated( relNode!, relationship.destinationEntity!.name!, relIdentifier, context! )
-
+                try checkForDerivated( relNode, relationship.destinationEntity!.name!, relIdentifier, context! )
+                relNode = cacheNode(withIdentifier: relIdentifier, entity: relationship.destinationEntity!)
             }
             
             return relNode!.objectID
@@ -201,9 +201,10 @@ open class MIOPersistentStore: NSIncrementalStore
             for relID in relIdentifiers {
                 var relNode = cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
                 if relNode == nil {
-                    relNode = cacheNode(newNodeWithValues: [:], identifier: relID, version: 0, entity: relationship.destinationEntity!, objectID: nil)
+                    // relNode = cacheNode(newNodeWithValues: [:], identifier: relID, version: 0, entity: relationship.destinationEntity!, objectID: nil)
                     // try fetchObject(With:relID, entityName: relationship.destinationEntity!.name!, context:context!)
-                    try checkForDerivated( relNode!, relationship.destinationEntity!.name!, relID, context! )
+                    try checkForDerivated( relNode, relationship.destinationEntity!.name!, relID, context! )
+                    relNode = cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
                 }
                 array.append(relNode!.objectID)
             }
@@ -257,7 +258,7 @@ open class MIOPersistentStore: NSIncrementalStore
         //let node = NSIncrementalStoreNode(objectID: objID, withValues: values, version: version)
         let node = MPSCacheNode(identifier:id, entity: entity, withValues: values, version: version, objectID: objID)
         
-        NSLog("\033[CacheNode Insert: \(node.referenceID)")
+        NSLog("[CacheNode Insert: \(node.referenceID)")
         
         cacheNodeQueue.sync {
             nodesByReferenceID[node.referenceID] = node
