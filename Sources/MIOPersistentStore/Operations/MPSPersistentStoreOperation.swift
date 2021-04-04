@@ -255,10 +255,11 @@ class MPSPersistentStoreOperation: Operation
                 } else if attr.attributeType == .UUIDAttributeType {
                     parsedValues[key] = newValue is String ? UUID(uuidString: newValue as! String ) : newValue  // (newValue as! UUID).uuidString.upperCased( )
                 } else if attr.attributeType == .transformableAttributeType {
-                    parsedValues[key] = newValue == nil ? nil
+                    parsedValues[key] = (newValue == nil || newValue is NSNull) ? NSNull()
                                       : try JSONSerialization.jsonObject(with: (newValue as! String).data(using: .utf8)!, options: [ .allowFragments ])
                 } else if attr.attributeType == .decimalAttributeType {
-                    parsedValues[key] = MIOCoreDecimalValue( newValue, nil )
+                    let decimal = MIOCoreDecimalValue( newValue, nil )
+                    parsedValues[key] = decimal != nil ? decimal! : NSNull()
                 } else {
                     if newValue != nil && newValue is NSNull == false {
                         // check type
