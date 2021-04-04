@@ -63,6 +63,7 @@ public enum MIOPersistentStoreError : Error
     case noStoreURL
     case invalidRequest
     case identifierIsNull
+    case invalidValueType(entityName:String, key:String, value:Any)
 }
 
 public enum MIOPersistentStoreConnectionType

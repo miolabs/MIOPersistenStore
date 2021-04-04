@@ -236,43 +236,51 @@ class MPSPersistentStoreOperation: Operation
             
             let prop = entity.propertiesByName[key]
             if prop is NSAttributeDescription {
-                
-                //let serverKey = (webStore.delegate?.webStore(store: webStore, serverAttributeName: key, forEntity: entity))!
+                                         
+                // TODO: Transfrom key from UserInfo
                 let serverKey = key
                 
-                //let newValue = webStore.delegate?.webStore(store: webStore, valueForAttribute: prop! as! NSAttributeDescription, serverValue:values[serverKey])
                 let newValue = values[serverKey]
+                if newValue == nil { continue }
                 
+                if newValue is NSNull {
+                    parsedValues[key] = newValue
+                    continue
+                }
+                                
                 let attr = prop as! NSAttributeDescription
                 if attr.attributeType == .dateAttributeType {
                     if let date = newValue as? Date {
                         parsedValues[key] = date
-                    } else {
-                        if let dateString = newValue as? String {
-                            parsedValues[key] = parse_date( dateString )
-                        }
                     }
-                } else if attr.attributeType == .UUIDAttributeType {
+                    else if let dateString = newValue as? String {
+                        parsedValues[key] = parse_date( dateString )
+                    }
+                    else {
+                        throw MIOPersistentStoreError.invalidValueType(entityName:entity.name!, key: key, value: newValue!)
+                    }
+                }
+                else if attr.attributeType == .UUIDAttributeType {
                     parsedValues[key] = newValue is String ? UUID(uuidString: newValue as! String ) : newValue  // (newValue as! UUID).uuidString.upperCased( )
-                } else if attr.attributeType == .transformableAttributeType {
-                    parsedValues[key] = (newValue == nil || newValue is NSNull) ? NSNull()
-                                      : try JSONSerialization.jsonObject(with: (newValue as! String).data(using: .utf8)!, options: [ .allowFragments ])
-                } else if attr.attributeType == .decimalAttributeType {
+                }
+                else if attr.attributeType == .transformableAttributeType {
+                    parsedValues[key] = try JSONSerialization.jsonObject(with: (newValue as! String).data(using: .utf8)!, options: [ .allowFragments ])
+                }
+                else if attr.attributeType == .decimalAttributeType {
                     let decimal = MIOCoreDecimalValue( newValue, nil )
                     parsedValues[key] = decimal != nil ? decimal! : NSNull()
-                } else {
-                    if newValue != nil && newValue is NSNull == false {
-                        // check type
-                        switch attr.attributeType {
-                        case .booleanAttributeType, .decimalAttributeType, .doubleAttributeType, .floatAttributeType, .integer16AttributeType, .integer32AttributeType, .integer64AttributeType:
-                            assert(newValue is NSNumber, "[Black Magic] Received Number with incorrect type for key \(key)")
-                            
-                        case .stringAttributeType:
-                            assert(newValue is NSString, "[Black Magic] Received String with incorrect type for key \(key)")
+                }
+                else {
+                    // check type
+                    switch attr.attributeType {
+                    case .booleanAttributeType, .decimalAttributeType, .doubleAttributeType, .floatAttributeType, .integer16AttributeType, .integer32AttributeType, .integer64AttributeType:
+                        assert(newValue is NSNumber, "[Black Magic] Received Number with incorrect type for key \(key)")
                         
-                        default:
-                            assert(true)
-                        }
+                    case .stringAttributeType:
+                        assert(newValue is NSString, "[Black Magic] Received String with incorrect type for key \(key)")
+                    
+                    default:
+                        assert(true)
                     }
                     parsedValues[key] = newValue
                 }
@@ -289,15 +297,12 @@ class MPSPersistentStoreOperation: Operation
                 
                 let relEntity = entity.relationshipsByName[key]!
                 let value = values[serverKey]
-                if value == nil {
-                    continue
-                }
+                if value == nil { continue }
                 
                 if relEntity.isToMany == false {
                     let relKeyPathNode = relationshipNodes![key] as? NSMutableDictionary
-                    let serverValues = value as? [String:Any]
-                    if serverValues != nil {
-                        try updateObject(values: serverValues!, fetchEntity: relEntity.destinationEntity!, objectID: nil, relationshipNodes: relKeyPathNode, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
+                    if let serverValues = value as? [String:Any] {
+                        try updateObject(values: serverValues, fetchEntity: relEntity.destinationEntity!, objectID: nil, relationshipNodes: relKeyPathNode, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
                         //let serverID = webStore.delegate?.webStore(store: webStore, serverIDForItem: value!, entityName: relEntity.destinationEntity!.name!)
                         guard let identifierString = store.identifierForItem(value as! [String:Any], entityName: relEntity.destinationEntity!.name!) else {
                             throw MIOPersistentStoreError.identifierIsNull
