@@ -13,11 +13,20 @@ public class MPSRequestResponse : NSObject {
     var items : Any?
     var timestamp : TimeInterval
     
-    @objc public init(result : Bool, items : Any?, timestamp : TimeInterval) {
-        
+    #if os(Linux)
+    public init(result : Bool, items : Any?, timestamp : TimeInterval) {
         self.result = result
         self.items = items
         self.timestamp = timestamp
     }
+    #else
+    @objc
+    public init(result : Bool, items : Any?, timestamp : TimeInterval) {
+        self.result = result
+        self.items = items
+        self.timestamp = timestamp
+    }
+    #endif
+        
     
 }
