@@ -123,4 +123,8 @@ open class MPSCacheNode : NSObject
     func value(forRelationship relationship: NSRelationshipDescription) throws -> Any? {
         return _values[relationship.name]
     }
+    
+    func invalidate(){
+        _version = 0
+    }
 }

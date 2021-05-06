@@ -351,6 +351,15 @@ open class MIOPersistentStore: NSIncrementalStore
         return OperationQueue()
     }()
     
+    public func refresh(object: NSManagedObject, context: NSManagedObjectContext) throws {
+        
+        let identifier = object.objectID._referenceObject as! String
+        let node = cacheNode(withIdentifier: identifier, entity: object.entity)
+        if node != nil { node!.invalidate() }
+        
+        try fetchObject(With: identifier, entityName: object.objectID.entity.name!, context: context)
+    }
+        
     // MARK: - Fetching objects from server and cache
     
     var fetchingObjects = [String : Bool]()
