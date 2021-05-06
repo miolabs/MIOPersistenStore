@@ -20,8 +20,8 @@ open class MPSCacheNode : NSObject
         return entity.name! + "://" + identifier
     }
     
-    var _identifier:String
-    var _entity:NSEntityDescription
+    let _identifier:String
+    let _entity:NSEntityDescription
     var _values:[String:Any]
     var _version:UInt64 = 0
     var _objectID:NSManagedObjectID
@@ -32,17 +32,71 @@ open class MPSCacheNode : NSObject
     
     init(identifier:String, entity:NSEntityDescription, withValues values:[String:Any], version:UInt64, objectID:NSManagedObjectID){
         _identifier = identifier
-        _values = values
+        _values = MPSCacheNode.parse_values(values, entity: entity)
         _version = version
         _entity = entity
         _objectID = objectID
     }
     
     func update(withValues values:[String:Any], version: UInt64) {
-        _values.merge(values, uniquingKeysWith: { (_, new) in new } )
+        let parse_values = MPSCacheNode.parse_values(values, entity: _entity)
+        _values.merge(parse_values, uniquingKeysWith: { (_, new) in new } )
         _node = nil
         _attributeValues = nil
         _version = version
+    }
+    
+    static func parse_values(_ values:[String:Any], entity:NSEntityDescription) -> [String:Any] {
+        
+        func reference(from value:Any) -> Any {
+            if let objID = value as? NSManagedObjectID {
+                return objID._referenceObject
+            }
+            else if let obj = value as? NSManagedObject {
+                return obj.objectID._referenceObject
+            }
+            else if let id = value as? String {
+                return id
+            }
+            
+            return NSNull()
+        }
+        
+        var new_values:[String:Any] = [:]
+        
+        for (key, v) in values {
+            
+            if let rel = entity.propertiesByName[key] as? NSRelationshipDescription {
+                if rel.isToMany == false {
+                    new_values[key] = reference(from: v)
+                }
+                else {
+                    if v is Set<NSManagedObject> {
+                        new_values[key] = (v as! Set<NSManagedObject>).map { reference(from: $0) }
+                    }
+                    else if v is Set<NSManagedObjectID> {
+                        new_values[key] = (v as! Set<NSManagedObjectID>).map { reference(from: $0) }
+                    }
+                    else if v is Set<String> {
+                        new_values[key] = (v as! Set<String>).map { reference(from: $0) }
+                    }
+                    else if v is Array<NSManagedObject> {
+                        new_values[key] = (v as! Array<NSManagedObject>).map { reference(from: $0) }
+                    }
+                    else if v is Array<NSManagedObjectID> {
+                        new_values[key] = (v as! Array<NSManagedObjectID>).map { reference(from: $0) }
+                    }
+                    else if v is Array<String> {
+                        new_values[key] = (v as! Array<String>).map { reference(from: $0) }
+                    }
+                }
+            }
+            else {
+                new_values[key] = v
+            }
+        }
+        
+        return new_values
     }
     
     var _node:NSIncrementalStoreNode?
