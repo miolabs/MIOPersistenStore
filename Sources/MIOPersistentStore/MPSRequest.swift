@@ -31,8 +31,8 @@ open class MPSRequest : NSObject
     open var entity:NSEntityDescription
     open var predicate:NSPredicate?
     open var sortDescriptors: [NSSortDescriptor]?
-    open var limit: Int?
-    open var offset: Int?
+    open var limit: Int32?
+    open var offset: Int32?
     open var includeRelationships: [String]?
     
     open var changeValues: [String:Any?]?
@@ -49,8 +49,8 @@ open class MPSRequest : NSObject
         entityName = entity.name!
         predicate = fetchRequest.predicate
         sortDescriptors = fetchRequest.sortDescriptors
-        limit = fetchRequest.fetchLimit
-        offset = fetchRequest.fetchOffset
+        limit  = MIOCoreInt32Value( fetchRequest.fetchLimit  )
+        offset = MIOCoreInt32Value( fetchRequest.fetchOffset )
         includeRelationships = fetchRequest.relationshipKeyPathsForPrefetching
         super.init()
     }
