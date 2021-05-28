@@ -254,7 +254,7 @@ class MPSPersistentStoreOperation: Operation
                         parsedValues[key] = date
                     }
                     else if let dateString = newValue as? String {
-                        parsedValues[key] = parse_date( dateString )
+                        parsedValues[key] = try parse_date( dateString )
                     }
                     else {
                         throw MIOPersistentStoreError.invalidValueType(entityName:entity.name!, key: key, value: newValue!)
