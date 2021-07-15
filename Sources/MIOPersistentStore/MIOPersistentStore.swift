@@ -207,6 +207,7 @@ open class MIOPersistentStore: NSIncrementalStore
                     try checkForDerivated( relNode, relationship.destinationEntity!.name!, relID, context! )
                     relNode = cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
                 }
+                if relNode == nil { continue }
                 array.append(relNode!.objectID)
             }
             
