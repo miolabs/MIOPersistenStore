@@ -215,12 +215,12 @@ class MPSPersistentStoreOperation: Operation
                 
         var node = store.cacheNode(withIdentifier: identifierString, entity: entity)
         if node == nil {
-            NSLog("New version: " + entity.name! + " (\(version))");
+            // --- NSLog("New version: " + entity.name! + " (\(version))");
             node = store.cacheNode(newNodeWithValues: parsedValues, identifier: identifierString, version: version, entity: entity, objectID: objectID)
             insertedObjectIDs.add(node!.objectID)
         }
         else if version > node!.version{
-            NSLog("Update version: \(entity.name!) (\(node!.version) -> \(version))")
+            // --- NSLog("Update version: \(entity.name!) (\(node!.version) -> \(version))")
             store.cacheNode(updateNodeWithValues: parsedValues, identifier: identifierString, version: version, entity: entity)
             updatedObjectIDs.add(node!.objectID)
         }

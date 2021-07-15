@@ -245,7 +245,7 @@ open class MIOPersistentStore: NSIncrementalStore
     func cacheNode(withIdentifier identifier:String, entity:NSEntityDescription) -> MPSCacheNode? {
                         
         let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier.uppercased(), entity: entity)
-        print("CacheNode Query: \(referenceID)")
+        // --- print("CacheNode Query: \(referenceID)")
         var node:MPSCacheNode?
         cacheNodeQueue.sync {
             node = nodesByReferenceID[referenceID]
@@ -260,7 +260,7 @@ open class MIOPersistentStore: NSIncrementalStore
         //let node = NSIncrementalStoreNode(objectID: objID, withValues: values, version: version)
         let node = MPSCacheNode(identifier:id, entity: entity, withValues: values, version: version, objectID: objID)
         
-        NSLog("[CacheNode Insert: \(node.referenceID)")
+        // --- NSLog("[CacheNode Insert: \(node.referenceID)")
         
         cacheNodeQueue.sync {
             nodesByReferenceID[node.referenceID] = node
@@ -280,7 +280,7 @@ open class MIOPersistentStore: NSIncrementalStore
                 
         let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier, entity: entity)
         
-        NSLog("CacheNode Insert: \(referenceID)")
+        // --- nslog("CacheNode Insert: \(referenceID)")
         
         cacheNodeQueue.sync {
             nodesByReferenceID[referenceID] = node
