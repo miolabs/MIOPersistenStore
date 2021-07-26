@@ -652,7 +652,7 @@ open class MIOPersistentStore: NSIncrementalStore
         op.moc = context
         op.dependencyIDs = dependencies
         op.saveCount = saveCount
-        addOperation(operation: op, serverID:identifierString)
+        addOperation(operation: op, identifierRef: object.entity.name! + "://" + identifierString)
     }
     
     func updateObjectOnServer(object:NSManagedObject, context:NSManagedObjectContext) throws {
@@ -698,7 +698,7 @@ open class MIOPersistentStore: NSIncrementalStore
         op.moc = context
         op.dependencyIDs = dependencies
         op.saveCount = saveCount
-        addOperation(operation: op, serverID:identifierString)
+        addOperation(operation: op, identifierRef: object.entity.name! + "://" + identifierString)
     }
     
     let deletedObjects = NSMutableSet()
@@ -744,30 +744,30 @@ open class MIOPersistentStore: NSIncrementalStore
         
         op.serverID = identifierString
         op.moc = context
-        addOperation(operation: op, serverID: identifierString)
+        addOperation(operation: op, identifierRef: object.entity.name! + "://" + identifierString)
     }
     
     var saveOperationsByReferenceID = [String:MPSPersistentStoreOperation]()
     var uploadingOperations = [String:Any]()
     
-    func addOperation(operation:MPSPersistentStoreOperation, serverID:String){
-        saveOperationsByReferenceID[serverID] = operation
+    func addOperation(operation:MPSPersistentStoreOperation, identifierRef:String){
+        saveOperationsByReferenceID[identifierRef] = operation
     }
     
-    func removeOperation(operation:MPSPersistentStoreOperation, serverID:String){
-        saveOperationsByReferenceID[serverID] = nil
+    func removeOperation(operation:MPSPersistentStoreOperation, identifierRef:String){
+        saveOperationsByReferenceID[identifierRef] = nil
     }
     
-    func operationAtServerID(serverID:String, saveCount:Int) -> MPSPersistentStoreOperation? {
-        return saveOperationsByReferenceID[serverID]
+    func operationAtReferenceID(identifierRef:String, saveCount:Int) -> MPSPersistentStoreOperation? {
+        return saveOperationsByReferenceID[identifierRef]
     }
     
     func checkOperationDependecies(operation: MPSPersistentStoreOperation, dependencies:[String]) {
         
         for referenceID in dependencies {
-            var op = operationAtServerID(serverID:referenceID, saveCount:saveCount)
+            var op = operationAtReferenceID(identifierRef: referenceID, saveCount:saveCount)
             if (op == nil) {
-                op = lastUploadingOperationByServerID(serverID:referenceID)
+                op = lastUploadingOperationByReferenceID(referenceID: referenceID)
             }
             
             if (op == nil) { continue }
@@ -788,19 +788,19 @@ open class MIOPersistentStore: NSIncrementalStore
         
         for (refID, op) in saveOperationsByReferenceID {
             checkOperationDependecies(operation:op, dependencies: op.dependencyIDs)
-            addUploadingOperation(operation:op, serverID:refID);
+            addUploadingOperation(operation:op, referenceID: refID)
             saveOperationQueue.addOperation(op);
         }
         
         saveOperationsByReferenceID = [String:MPSPersistentStoreOperation]()
     }
     
-    func addUploadingOperation(operation:MPSPersistentStoreOperation, serverID:String){
+    func addUploadingOperation(operation:MPSPersistentStoreOperation, referenceID:String){
         
-        var array = uploadingOperations[serverID] as? NSMutableArray
+        var array = uploadingOperations[referenceID] as? NSMutableArray
         if array == nil {
             array = NSMutableArray()
-            uploadingOperations[serverID] = array
+            uploadingOperations[referenceID] = array
         }
         else {
             let lastOP = array?.lastObject as! MPSPersistentStoreOperation
@@ -810,8 +810,8 @@ open class MIOPersistentStore: NSIncrementalStore
         array?.add(operation);
     }
     
-    func lastUploadingOperationByServerID(serverID:String) -> MPSPersistentStoreOperation? {
-        let array = uploadingOperations[serverID] as? NSMutableArray
+    func lastUploadingOperationByReferenceID(referenceID:String) -> MPSPersistentStoreOperation? {
+        let array = uploadingOperations[referenceID] as? NSMutableArray
         if (array == nil) {
             return nil
         }
