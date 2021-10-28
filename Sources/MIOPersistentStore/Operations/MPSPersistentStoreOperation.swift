@@ -23,13 +23,13 @@ class MPSPersistentStoreOperation: Operation
     }
     
     var store:MIOPersistentStore
+    weak var moc: NSManagedObjectContext?
+    
     var request:MPSRequest
     var entity:NSEntityDescription
     var relationshipKeyPathsForPrefetching:[String]
     var serverID:String?
-    var moc: NSManagedObjectContext?
-
-    
+        
     var saveCount = 0
     var dependencyIDs:[String] = []
     
