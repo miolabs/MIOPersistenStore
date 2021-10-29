@@ -233,6 +233,10 @@ open class MIOPersistentStore: NSIncrementalStore
     
     public override func managedObjectContextDidUnregisterObjects(with objectIDs: [NSManagedObjectID]) {
         
+        for objID in objectIDs {
+            guard let identifier = referenceObject(for: objID) as? String else { continue }
+            cacheNode(deleteNodeAtIdentifier: identifier, entity: objID.entity)
+        }
     }
     
     // MARK: - Cache Nodes in memory
