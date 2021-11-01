@@ -234,8 +234,11 @@ open class MIOPersistentStore: NSIncrementalStore
     public override func managedObjectContextDidUnregisterObjects(with objectIDs: [NSManagedObjectID]) {
         
         for objID in objectIDs {
+                        
+            
             guard let identifier = referenceObject(for: objID) as? String else { continue }
             cacheNode(deleteNodeAtIdentifier: identifier, entity: objID.entity)
+            
         }
     }
     
@@ -381,15 +384,15 @@ open class MIOPersistentStore: NSIncrementalStore
         let op = MPSFetchOperation(store:self, request:request, entity:fetchRequest.entity!, relationshipKeyPathsForPrefetching:fetchRequest.relationshipKeyPathsForPrefetching, identifier: nil)
         op.completionBlock = {
             
-            context.performAndWait {
-                for objID in op.insertedObjectIDs {
-                    self.cacheObjectForContext(objID: objID, entity:objID.entity, context: context, refresh: true)
-                }
-                
-                for objID in op.updatedObjectIDs {
-                    self.cacheObjectForContext(objID: objID, entity:objID.entity, context: context, refresh: true)
-                }
-            }
+//            context.performAndWait {
+//                for objID in op.insertedObjectIDs {
+//                    self.cacheObjectForContext(objID: objID, entity:objID.entity, context: context, refresh: true)
+//                }
+//
+//                for objID in op.updatedObjectIDs {
+//                    self.cacheObjectForContext(objID: objID, entity:objID.entity, context: context, refresh: true)
+//                }
+//            }
             
             //            if completion != nil {
             //                completion!(op.objectIDs, op.insertedObjectIDs, op.updatedObjectIDs)
@@ -448,19 +451,20 @@ open class MIOPersistentStore: NSIncrementalStore
         let op = MPSFetchOperation(store:self, request:request, entity:fetchRequest.entity!, relationshipKeyPathsForPrefetching:fetchRequest.relationshipKeyPathsForPrefetching, identifier: nil)
         op.completionBlock = {
             
-            context.performAndWait {
-                for objID in op.insertedObjectIDs {
-                    self.cacheObjectForContext(objID: objID, entity:objID.entity, context: context, refresh: true)
-                }
-                
-                for objID in op.updatedObjectIDs {
-                    self.cacheObjectForContext(objID: objID, entity:objID.entity, context: context, refresh: true)
-                }
-            }
+//            context.performAndWait {
+//                for objID in op.insertedObjectIDs {
+//                    self.cacheObjectForContext(objID: objID, entity:objID.entity, context: context, refresh: true)
+//                }
+//
+//                for objID in op.updatedObjectIDs {
+//                    self.cacheObjectForContext(objID: objID, entity:objID.entity, context: context, refresh: true)
+//                }
+//            }
             
             //            if completion != nil {
             //                completion!(op.objectIDs, op.insertedObjectIDs, op.updatedObjectIDs)
             //            }
+            
         }
         op.moc = context
         
@@ -525,43 +529,43 @@ open class MIOPersistentStore: NSIncrementalStore
     
     func cacheObjectForContext(objID:NSManagedObjectID, entity:NSEntityDescription, context:NSManagedObjectContext, refresh:Bool) {
         
-        do {
-            let obj = try context.existingObject(with: objID)
-            if refresh == true  {
-                context.refresh(obj, mergeChanges: true)
-            }
-            var set = self.objectsByEntityName[entity.name!] as? NSMutableSet
-            if set == nil {
-                set = NSMutableSet()
-            }
-            set?.add(obj.objectID)
-            self.objectsByEntityName[entity.name!] = set
-            
-            if let superentity = entity.superentity {
-                let identifier = referenceObject(for: objID) as! String
-                let node = cacheNode(withIdentifier: identifier, entity: superentity)
-                cacheObjectForContext(objID: node!.objectID, entity:superentity, context: context, refresh: refresh)
-            }
-        }
-        catch {
-            print("ERROR: \(error)")
-        }
+//        do {
+//            let obj = try context.existingObject(with: objID)
+//            if refresh == true  {
+//                context.refresh(obj, mergeChanges: true)
+//            }
+//            var set = self.objectsByEntityName[entity.name!] as? NSMutableSet
+//            if set == nil {
+//                set = NSMutableSet()
+//            }
+//            set?.add(obj.objectID)
+//            self.objectsByEntityName[entity.name!] = set
+//
+//            if let superentity = entity.superentity {
+//                let identifier = referenceObject(for: objID) as! String
+//                let node = cacheNode(withIdentifier: identifier, entity: superentity)
+//                cacheObjectForContext(objID: node!.objectID, entity:superentity, context: context, refresh: refresh)
+//            }
+//        }
+//        catch {
+//            print("ERROR: \(error)")
+//        }
         
         
     }
     
     func deleteCacheObjectForContext(objID:NSManagedObjectID, entity:NSEntityDescription, context:NSManagedObjectContext){
         
-        let set = self.objectsByEntityName[entity.name!] as? NSMutableSet
-        if set == nil {
-            return
-        }
-        set?.remove(objID)
-        self.objectsByEntityName[entity.name!] = set
-        
-        if let superentity = entity.superentity {
-            deleteCacheObjectForContext(objID: objID, entity:superentity, context: context)
-        }
+//        let set = self.objectsByEntityName[entity.name!] as? NSMutableSet
+//        if set == nil {
+//            return
+//        }
+//        set?.remove(objID)
+//        self.objectsByEntityName[entity.name!] = set
+//
+//        if let superentity = entity.superentity {
+//            deleteCacheObjectForContext(objID: objID, entity:superentity, context: context)
+//        }
     }
     
     
@@ -636,20 +640,22 @@ open class MIOPersistentStore: NSIncrementalStore
                 self.operationQueue.cancelAllOperations()
             }
             else {
-                context.performAndWait {
-                    for objID in op.insertedObjectIDs {
-                        self.cacheObjectForContext(objID: objID, entity:object.entity, context: context, refresh:true)
-                    }
-                    
-                    for objID in op.updatedObjectIDs {
-                        self.cacheObjectForContext(objID: objID, entity:object.entity, context: context, refresh: true)
-                    }
-                }
+//                context.performAndWait {
+//                    for objID in op.insertedObjectIDs {
+//                        self.cacheObjectForContext(objID: objID, entity:object.entity, context: context, refresh:true)
+//                    }
+//
+//                    for objID in op.updatedObjectIDs {
+//                        self.cacheObjectForContext(objID: objID, entity:object.entity, context: context, refresh: true)
+//                    }
+//                }
                 
                 if op.responseCode != 200 {
                     NotificationCenter.default.post(name: NSNotification.Name(rawValue: "MWSPersistentStoreDidUpdateError"), object: object.objectID, userInfo:op.responseData as? [AnyHashable : Any])
                 }
             }
+            
+            self.removeOperation(operation: op, identifierRef: object.entity.name! + "://" + identifierString)
         }
         
         op.serverID = identifierString
@@ -682,20 +688,21 @@ open class MIOPersistentStore: NSIncrementalStore
         //op.webStoreCache = persistentStoreCache
         op.nodeVersion = node.version
         op.completionBlock = {
-            context.performAndWait {
-                for objID in op.insertedObjectIDs {
-                    self.cacheObjectForContext(objID: objID, entity:object.entity, context: context, refresh: true)
-                }
-                
-                for objID in op.updatedObjectIDs {
-                    self.cacheObjectForContext(objID: objID, entity:object.entity, context: context, refresh: true)
-                }
-            }
+//            context.performAndWait {
+//                for objID in op.insertedObjectIDs {
+//                    self.cacheObjectForContext(objID: objID, entity:object.entity, context: context, refresh: true)
+//                }
+//
+//                for objID in op.updatedObjectIDs {
+//                    self.cacheObjectForContext(objID: objID, entity:object.entity, context: context, refresh: true)
+//                }
+//            }
             
             if op.responseCode != 200 {
                 NotificationCenter.default.post(name: NSNotification.Name(rawValue: "MWSPersistentStoreDidUpdateError"), object: object.objectID, userInfo:op.responseData as? [AnyHashable : Any])
             }
             
+            self.removeOperation(operation: op, identifierRef: object.entity.name! + "://" + identifierString)
         }
         
         op.serverID = identifierString
@@ -726,13 +733,17 @@ open class MIOPersistentStore: NSIncrementalStore
         //op.webStoreCache = persistentStoreCache
         op.completionBlock = {
             context.performAndWait {
-                for objID in op.insertedObjectIDs {
-                    self.cacheObjectForContext(objID: objID, entity:objID.entity, context: context, refresh: true)
-                }
+//                for objID in op.insertedObjectIDs {
+//                    self.cacheObjectForContext(objID: objID, entity:objID.entity, context: context, refresh: true)
+//                }
+//
+//                for objID in op.updatedObjectIDs {
+//                    self.cacheObjectForContext(objID: objID, entity:objID.entity, context: context, refresh: true)
+//                }
                 
-                for objID in op.updatedObjectIDs {
-                    self.cacheObjectForContext(objID: objID, entity:objID.entity, context: context, refresh: true)
-                }
+//                for objID in op.deletedObjectIDs {
+//                    self.deleteCacheObjectForContext(objID: objID, entity:objID.entity, context: context)
+//                }
                 
             }
             if op.responseCode == 200 {
@@ -744,6 +755,8 @@ open class MIOPersistentStore: NSIncrementalStore
             else if op.responseCode != 200 {
                 NotificationCenter.default.post(name: NSNotification.Name(rawValue: "MWSPersistentStoreDidUpdateError"), object: object.objectID, userInfo:op.responseData as? [AnyHashable : Any])
             }
+            
+            self.removeOperation(operation: op, identifierRef: object.entity.name! + "://" + identifierString)
         }
         
         op.serverID = identifierString
@@ -797,6 +810,7 @@ open class MIOPersistentStore: NSIncrementalStore
         }
         
         saveOperationsByReferenceID = [String:MPSPersistentStoreOperation]()
+        uploadingOperations = [:]
     }
     
     func addUploadingOperation(operation:MPSPersistentStoreOperation, referenceID:String){
