@@ -166,13 +166,14 @@ open class MIOPersistentStore: NSIncrementalStore
         
         let identifier = referenceObject(for: objectID) as! String
 
-        let node = (cacheNode(withIdentifier: identifier, entity: objectID.entity))!
-        if node.version == 0 {
+        var node = cacheNode(withIdentifier: identifier, entity: objectID.entity)
+        if node == nil || node?.version == 0 {
             try checkForDerivated( node, objectID.entity.name!, identifier, context! )
+            node = cacheNode(withIdentifier: identifier, entity: objectID.entity)
             // try fetchObject(With:identifier, entityName: objectID.entity.name!, context:context!)
         }
         
-        let value = try node.value(forRelationship: relationship)
+        let value = try node!.value(forRelationship: relationship)
         
         if relationship.isToMany == false {
             guard let relIdentifier = value as? String else {
