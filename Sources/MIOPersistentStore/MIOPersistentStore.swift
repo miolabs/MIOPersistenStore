@@ -143,7 +143,8 @@ open class MIOPersistentStore: NSIncrementalStore
                    cacheNode(newNodeWithValues: [:], identifier: identifier, version: 0, entity: objectID.entity, objectID: objectID)
         
         if (node.version == 0) {
-            try checkForDerivated( node, objectID.entity.name!, identifier, context )
+//            try checkForDerivated( node, objectID.entity.name!, identifier, context )
+            try fetchObject(With:identifier, entityName: objectID.entity.name!, context:context)
         }
         
         let storeNode = try node.storeNode()
@@ -151,15 +152,15 @@ open class MIOPersistentStore: NSIncrementalStore
     }
 
     
-    func checkForDerivated ( _ node: MPSCacheNode?, _ entityName: String, _ identifier: String, _ context: NSManagedObjectContext ) throws {
-        try fetchObject(With:identifier, entityName: entityName, context:context)
-//
-//        let derivatedEntity = node._values[ "classname" ] as? String
-//
-//        if derivatedEntity != nil && derivatedEntity! != entityName {
-//            try fetchObject(With:identifier, entityName: derivatedEntity!, context:context)
-//        }
-    }
+//    func checkForDerivated ( _ node: MPSCacheNode?, _ entityName: String, _ identifier: String, _ context: NSManagedObjectContext ) throws {
+//        try fetchObject(With:identifier, entityName: entityName, context:context)
+////
+////        let derivatedEntity = node._values[ "classname" ] as? String
+////
+////        if derivatedEntity != nil && derivatedEntity! != entityName {
+////            try fetchObject(With:identifier, entityName: derivatedEntity!, context:context)
+////        }
+//    }
 
     
     public override func newValue(forRelationship relationship: NSRelationshipDescription, forObjectWith objectID: NSManagedObjectID, with context: NSManagedObjectContext?) throws -> Any {
@@ -168,7 +169,8 @@ open class MIOPersistentStore: NSIncrementalStore
 
         var node = cacheNode(withIdentifier: identifier, entity: objectID.entity)
         if node == nil || node?.version == 0 {
-            try checkForDerivated( node, objectID.entity.name!, identifier, context! )
+//            try checkForDerivated( node, objectID.entity.name!, identifier, context! )
+            try fetchObject(With:identifier, entityName: objectID.entity.name!, context:context!)
             node = cacheNode(withIdentifier: identifier, entity: objectID.entity)
             // try fetchObject(With:identifier, entityName: objectID.entity.name!, context:context!)
         }
@@ -183,8 +185,8 @@ open class MIOPersistentStore: NSIncrementalStore
             var relNode = cacheNode(withIdentifier: relIdentifier, entity: relationship.destinationEntity!)
             if relNode == nil {
                 // relNode = cacheNode(newNodeWithValues: [:],  identifier: relIdentifier, version: 0, entity:relationship.destinationEntity!, objectID: nil)
-                // try fetchObject(With:relIdentifier, entityName: relationship.destinationEntity!.name!, context:context!)
-                try checkForDerivated( relNode, relationship.destinationEntity!.name!, relIdentifier, context! )
+                 try fetchObject(With:relIdentifier, entityName: relationship.destinationEntity!.name!, context:context!)
+//                try checkForDerivated( relNode, relationship.destinationEntity!.name!, relIdentifier, context! )
                 relNode = cacheNode(withIdentifier: relIdentifier, entity: relationship.destinationEntity!)
             }
             
@@ -199,20 +201,30 @@ open class MIOPersistentStore: NSIncrementalStore
                 return []
             }
             
-            var array:[NSManagedObjectID] = []
+            var objectIDs:Set<NSManagedObjectID> = Set()
+            var faultNodeIDs:[String] = []
             for relID in relIdentifiers {
-                var relNode = cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
+                let relNode = cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
                 if relNode == nil {
+                    faultNodeIDs.append(relID)
                     // relNode = cacheNode(newNodeWithValues: [:], identifier: relID, version: 0, entity: relationship.destinationEntity!, objectID: nil)
                     // try fetchObject(With:relID, entityName: relationship.destinationEntity!.name!, context:context!)
-                    try checkForDerivated( relNode, relationship.destinationEntity!.name!, relID, context! )
-                    relNode = cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
+//                    try checkForDerivated( relNode, relationship.destinationEntity!.name!, relID, context! )
+//                    relNode = cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
                 }
                 if relNode == nil { continue }
-                array.append(relNode!.objectID)
+                objectIDs.insert(relNode!.objectID)
             }
             
-            return array
+            if faultNodeIDs.isEmpty == false {
+                try fetchObjects(identifiers: faultNodeIDs, entityName: relationship.destinationEntity!.name!, context: context!)
+                for relID in faultNodeIDs {
+                    let relNode = cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
+                    objectIDs.insert(relNode!.objectID)
+                }
+            }
+            
+            return Array( objectIDs )
         }
     }
     
@@ -433,6 +445,13 @@ open class MIOPersistentStore: NSIncrementalStore
         //        if enableLog {
         //            NSLog("Downloading REFID: " + serverID);
         //        }
+    }
+    
+    @discardableResult func fetchObjects(identifiers:[String], entityName:String, context:NSManagedObjectContext) throws -> Any? {
+        let r = NSFetchRequest<NSManagedObject>(entityName: entityName)
+        r.entity = persistentStoreCoordinator?.managedObjectModel.entitiesByName[entityName]
+        r.predicate = MIOPredicateWithFormat(format: "identifier in %@", identifiers)
+        return try fetchObjects(fetchRequest:r, with:context)
     }
     
     public func fetchObjects(fetchRequest:NSFetchRequest<NSManagedObject>, with context:NSManagedObjectContext) throws -> [Any] {
