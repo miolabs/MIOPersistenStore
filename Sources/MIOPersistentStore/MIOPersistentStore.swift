@@ -450,7 +450,7 @@ open class MIOPersistentStore: NSIncrementalStore
     @discardableResult func fetchObjects(identifiers:[String], entityName:String, context:NSManagedObjectContext) throws -> Any? {
         let r = NSFetchRequest<NSManagedObject>(entityName: entityName)
         r.entity = persistentStoreCoordinator?.managedObjectModel.entitiesByName[entityName]
-        r.predicate = MIOPredicateWithFormat(format: "identifier in %@", identifiers)
+        r.predicate = MIOPredicateWithFormat(format: "identifier in \(identifiers)")
         return try fetchObjects(fetchRequest:r, with:context)
     }
     
