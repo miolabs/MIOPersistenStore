@@ -246,7 +246,7 @@ open class MIOPersistentStore: NSIncrementalStore
                     let relNode = cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
                     if relNode == nil {
                         print("FATAL: CD CACHE NONE NULL: \(relationship.destinationEntity!.name!)://\(relID)")
-                        return NSNull()
+                        continue
                     }
                     objectIDs.insert(relNode!.objectID)
                 }
