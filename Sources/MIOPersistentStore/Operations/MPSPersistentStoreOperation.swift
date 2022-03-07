@@ -177,7 +177,7 @@ class MPSPersistentStoreOperation: Operation
             entity = fetchEntity.managedObjectModel.entitiesByName[entityName]!
 
             guard let identifierString = store.identifierForItem(values, entityName: entityName) else {
-                throw MIOPersistentStoreError.identifierIsNull
+                throw MIOPersistentStoreError.identifierIsNull()
             }
             
             let fr =  NSFetchRequest<NSManagedObject>(entityName: entityName)
@@ -203,7 +203,7 @@ class MPSPersistentStoreOperation: Operation
         let parsedValues = try checkRelationships(values:entityValues, entity: entity, relationshipNodes: relationshipNodes, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
         
         guard let identifierString = store.identifierForItem(parsedValues, entityName: fetchEntity.name!) else {
-            throw MIOPersistentStoreError.identifierIsNull
+            throw MIOPersistentStoreError.identifierIsNull()
         }
         
         let version = store.versionForItem(values, entityName: fetchEntity.name!)
@@ -305,7 +305,7 @@ class MPSPersistentStoreOperation: Operation
                         try updateObject(values: serverValues, fetchEntity: relEntity.destinationEntity!, objectID: nil, relationshipNodes: relKeyPathNode, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
                         //let serverID = webStore.delegate?.webStore(store: webStore, serverIDForItem: value!, entityName: relEntity.destinationEntity!.name!)
                         guard let identifierString = store.identifierForItem(value as! [String:Any], entityName: relEntity.destinationEntity!.name!) else {
-                            throw MIOPersistentStoreError.identifierIsNull
+                            throw MIOPersistentStoreError.identifierIsNull()
                         }
                         parsedValues[key] = identifierString
                     }
@@ -320,7 +320,7 @@ class MPSPersistentStoreOperation: Operation
                         try updateObject(values: relatedItem as! [String:Any], fetchEntity: relEntity.destinationEntity!, objectID: nil, relationshipNodes: relKeyPathNode!, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
                         //let serverID = webStore.delegate?.webStore(store: webStore, serverIDForItem: relatedItem, entityName: relEntity.destinationEntity!.name!)
                         guard let identifierString = store.identifierForItem(relatedItem as! [String:Any], entityName: relEntity.destinationEntity!.name!) else {
-                            throw MIOPersistentStoreError.identifierIsNull
+                            throw MIOPersistentStoreError.identifierIsNull()
                         }
                         array.append(identifierString)
                     }

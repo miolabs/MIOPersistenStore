@@ -60,11 +60,30 @@ public enum MIOPersistentStoreRequestType
 
 public enum MIOPersistentStoreError : Error
 {
-    case noStoreURL
-    case invalidRequest
-    case identifierIsNull
-    case invalidValueType(entityName:String, key:String, value:Any)
+    case noStoreURL(_ schema:String = "", functionName: String = #function)
+    case invalidRequest(_ schema:String = "", functionName: String = #function)
+    case identifierIsNull(_ schema:String = "", functionName: String = #function)
+    case invalidValueType(_ schema:String = "", entityName:String, key:String, value:Any, functionName: String = #function)
+    case relationIdentifierNoExist(_ schema:String = "", entityName:String, relation:String, relationEntityName:String, id:String, functionName: String = #function)
 }
+
+extension MIOPersistentStoreError: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case let .noStoreURL(schema, functionName):
+            return "[MIOPersistentStoreError] \(schema) No store URL. \(functionName)"
+        case let .invalidRequest(schema, functionName):
+            return "[MIOPersistentStoreError] \(schema) Invalid request. \(functionName)"
+        case let .identifierIsNull(schema, functionName):
+            return "[MIOPersistentStoreError] \(schema) Identifier is null. \(functionName)"
+        case let .invalidValueType(schema, entityName, key, value, functionName):
+            return "[MIOPersistentStoreError] \(schema) Invalid value type. \(entityName).\(key): \(value). \(functionName)"
+        case let .relationIdentifierNoExist(schema, entityName, relation, relationEntityName, id, functionName):
+            return "[MIOPersistentStoreError] \(schema) Relation identifier not exist. \(entityName).\(relation)): \(relationEntityName)://\(id). \(functionName)"
+        }
+    }
+}
+
 
 public enum MIOPersistentStoreConnectionType
 {
@@ -109,7 +128,7 @@ open class MIOPersistentStore: NSIncrementalStore
     public override func loadMetadata() throws {
         
         guard let storeURL = url else {
-            throw MIOPersistentStoreError.noStoreURL
+            throw MIOPersistentStoreError.noStoreURL()
         }
         
         self.storeURL = storeURL
@@ -130,7 +149,7 @@ open class MIOPersistentStore: NSIncrementalStore
             return []
             
         default:
-            throw MIOPersistentStoreError.invalidRequest
+            throw MIOPersistentStoreError.invalidRequest()
         }
     }
     
@@ -190,6 +209,11 @@ open class MIOPersistentStore: NSIncrementalStore
                 relNode = cacheNode(withIdentifier: relIdentifier, entity: relationship.destinationEntity!)
             }
             
+            if relNode == nil {
+                print("FATAL: CD CACHE NONE NULL: \(relationship.destinationEntity!.name!)://\(relIdentifier)")
+                return NSNull()
+            }
+            
             return relNode!.objectID
         }
         else {
@@ -220,6 +244,10 @@ open class MIOPersistentStore: NSIncrementalStore
                 try fetchObjects(identifiers: faultNodeIDs, entityName: relationship.destinationEntity!.name!, context: context!)
                 for relID in faultNodeIDs {
                     let relNode = cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
+                    if relNode == nil {
+                        print("FATAL: CD CACHE NONE NULL: \(relationship.destinationEntity!.name!)://\(relID)")
+                        return NSNull()
+                    }
                     objectIDs.insert(relNode!.objectID)
                 }
             }
@@ -231,7 +259,7 @@ open class MIOPersistentStore: NSIncrementalStore
     public override func obtainPermanentIDs(for array: [NSManagedObject]) throws -> [NSManagedObjectID] {
         return try array.map{ obj in
             guard let identifier = delegate?.store(store: self, identifierForObject: obj) else {
-                throw MIOPersistentStoreError.identifierIsNull
+                throw MIOPersistentStoreError.identifierIsNull()
             }
             
             let objID = newObjectID( for: obj.entity, referenceObject: identifier.uuidString.uppercased() )
@@ -636,7 +664,7 @@ open class MIOPersistentStore: NSIncrementalStore
     func insertObjectIntoServer(object:NSManagedObject, context:NSManagedObjectContext, onError: @escaping ( _ error: Error ) -> Void ) throws {
         
         guard let identifier = delegate?.store(store: self, identifierForObject: object) else {
-            throw MIOPersistentStoreError.identifierIsNull
+            throw MIOPersistentStoreError.identifierIsNull()
         }
         
         let identifierString = identifier.uuidString.uppercased()
@@ -688,7 +716,7 @@ open class MIOPersistentStore: NSIncrementalStore
     func updateObjectOnServer(object:NSManagedObject, context:NSManagedObjectContext) throws {
         
         guard let identifier = delegate?.store(store: self, identifierForObject: object) else {
-            throw MIOPersistentStoreError.identifierIsNull
+            throw MIOPersistentStoreError.identifierIsNull()
         }
         
         let identifierString = identifier.uuidString.uppercased()
@@ -736,7 +764,7 @@ open class MIOPersistentStore: NSIncrementalStore
     func deleteObjectOnServer(object:NSManagedObject, context:NSManagedObjectContext) throws {
         
         guard let identifier = delegate?.store(store: self, identifierForObject: object) else {
-            throw MIOPersistentStoreError.identifierIsNull
+            throw MIOPersistentStoreError.identifierIsNull()
         }
         let identifierString = identifier.uuidString.uppercased()
 
