@@ -209,10 +209,10 @@ open class MIOPersistentStore: NSIncrementalStore
                 relNode = cacheNode(withIdentifier: relIdentifier, entity: relationship.destinationEntity!)
             }
             
-//            if relNode == nil {
-//                print("FATAL: CD CACHE NONE NULL: \(relationship.destinationEntity!.name!)://\(relIdentifier)")
-//                return NSNull()
-//            }
+            if relNode == nil {
+                let delegate = (context!.persistentStoreCoordinator!.persistentStores[0] as! MIOPersistentStore ).delegate!
+                print("FATAL: CD CACHE NODE NULL: \(delegate): \(relationship.destinationEntity!.name!)://\(relIdentifier)")
+            }
             
             return relNode!.objectID
         }
@@ -244,10 +244,10 @@ open class MIOPersistentStore: NSIncrementalStore
                 try fetchObjects(identifiers: faultNodeIDs, entityName: relationship.destinationEntity!.name!, context: context!)
                 for relID in faultNodeIDs {
                     let relNode = cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
-//                    if relNode == nil {
-//                        print("FATAL: CD CACHE NONE NULL: \(relationship.destinationEntity!.name!)://\(relID)")
-//                        continue
-//                    }
+                    if relNode == nil {
+                        let delegate = (context!.persistentStoreCoordinator!.persistentStores[0] as! MIOPersistentStore ).delegate!
+                        print("FATAL: CD CACHE NODE NULL: \(delegate): \(relationship.destinationEntity!.name!)://\(relID)")
+                    }
                     objectIDs.insert(relNode!.objectID)
                 }
             }
