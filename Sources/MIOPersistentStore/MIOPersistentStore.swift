@@ -629,6 +629,8 @@ open class MIOPersistentStore: NSIncrementalStore
     
     func saveObjects(request:NSSaveChangesRequest, with context:NSManagedObjectContext) throws {
         var insertError: Error?
+        var updateError: Error?
+        var deleteError: Error?
         
         try request.insertedObjects?.forEach({ (obj) in
             if obj.changedValues().count > 0 {
@@ -639,13 +641,13 @@ open class MIOPersistentStore: NSIncrementalStore
         
         try request.updatedObjects?.forEach({ (obj) in
             if obj.changedValues().count > 0 {
-                try updateObjectOnServer(object: obj, context: context)
+                try updateObjectOnServer(object: obj, context: context, onError: { updateError = $0 } )
                 //updateObjectOnCache(object: obj)
             }
         })
         
         try request.deletedObjects?.forEach({ (obj) in
-            try deleteObjectOnServer(object: obj, context: context)
+            try deleteObjectOnServer(object: obj, context: context, onError: { deleteError = $0 } )
             //deleteObjectOnCache(object: obj)
             //            let serverID = referenceObject(for: obj.objectID) as! String
             //            let referenceID = obj.entity.name! + "://" + serverID;
@@ -658,6 +660,8 @@ open class MIOPersistentStore: NSIncrementalStore
         if connectionType == .Synchronous {
             saveOperationQueue.waitUntilAllOperationsAreFinished()
             if insertError != nil { throw insertError! }
+            if updateError != nil { throw updateError! }
+            if deleteError != nil { throw deleteError! }
         }
     }
     
@@ -713,7 +717,7 @@ open class MIOPersistentStore: NSIncrementalStore
         addOperation(operation: op, identifierRef: object.entity.name! + "://" + identifierString)
     }
     
-    func updateObjectOnServer(object:NSManagedObject, context:NSManagedObjectContext) throws {
+    func updateObjectOnServer(object:NSManagedObject, context:NSManagedObjectContext, onError: @escaping ( _ error: Error ) -> Void ) throws {
         
         guard let identifier = delegate?.store(store: self, identifierForObject: object) else {
             throw MIOPersistentStoreError.identifierIsNull()
@@ -736,6 +740,12 @@ open class MIOPersistentStore: NSIncrementalStore
         //op.webStoreCache = persistentStoreCache
         op.nodeVersion = node.version
         op.completionBlock = {
+            if op.responseError != nil {
+                onError( op.responseError! )
+                self.operationQueue.cancelAllOperations()
+            }
+            else {
+
 //            context.performAndWait {
 //                for objID in op.insertedObjectIDs {
 //                    self.cacheObjectForContext(objID: objID, entity:object.entity, context: context, refresh: true)
@@ -746,8 +756,9 @@ open class MIOPersistentStore: NSIncrementalStore
 //                }
 //            }
             
-            if op.responseCode != 200 {
-                NotificationCenter.default.post(name: NSNotification.Name(rawValue: "MWSPersistentStoreDidUpdateError"), object: object.objectID, userInfo:op.responseData as? [AnyHashable : Any])
+                if op.responseCode != 200 {
+                    NotificationCenter.default.post(name: NSNotification.Name(rawValue: "MWSPersistentStoreDidUpdateError"), object: object.objectID, userInfo:op.responseData as? [AnyHashable : Any])
+                }
             }
             
             self.removeOperation(operation: op, identifierRef: object.entity.name! + "://" + identifierString)
@@ -761,7 +772,7 @@ open class MIOPersistentStore: NSIncrementalStore
     }
     
     let deletedObjects = NSMutableSet()
-    func deleteObjectOnServer(object:NSManagedObject, context:NSManagedObjectContext) throws {
+    func deleteObjectOnServer(object:NSManagedObject, context:NSManagedObjectContext, onError: @escaping ( _ error: Error ) -> Void ) throws {
         
         guard let identifier = delegate?.store(store: self, identifierForObject: object) else {
             throw MIOPersistentStoreError.identifierIsNull()
@@ -780,7 +791,14 @@ open class MIOPersistentStore: NSIncrementalStore
         let op = MPSDeleteOperation(store:self, request:request, entity:object.entity, relationshipKeyPathsForPrefetching:nil, identifier: nil)
         //op.webStoreCache = persistentStoreCache
         op.completionBlock = {
-            context.performAndWait {
+            if op.responseError != nil {
+                onError( op.responseError! )
+                self.operationQueue.cancelAllOperations()
+            }
+            else {
+            
+//            context.performAndWait {
+
 //                for objID in op.insertedObjectIDs {
 //                    self.cacheObjectForContext(objID: objID, entity:objID.entity, context: context, refresh: true)
 //                }
@@ -793,15 +811,15 @@ open class MIOPersistentStore: NSIncrementalStore
 //                    self.deleteCacheObjectForContext(objID: objID, entity:objID.entity, context: context)
 //                }
                 
-            }
-            if op.responseCode == 200 {
-                //TODO PARCHACO BORRADOS
-                /*self.cacheNodeQueue.async {
-                 self.deletedObjects.remove(referenceID)
-                 }*/
-            }
-            else if op.responseCode != 200 {
-                NotificationCenter.default.post(name: NSNotification.Name(rawValue: "MWSPersistentStoreDidUpdateError"), object: object.objectID, userInfo:op.responseData as? [AnyHashable : Any])
+                if op.responseCode == 200 {
+                    //TODO PARCHACO BORRADOS
+                    /*self.cacheNodeQueue.async {
+                     self.deletedObjects.remove(referenceID)
+                     }*/
+                }
+                else if op.responseCode != 200 {
+                    NotificationCenter.default.post(name: NSNotification.Name(rawValue: "MWSPersistentStoreDidUpdateError"), object: object.objectID, userInfo:op.responseData as? [AnyHashable : Any])
+                }
             }
             
             self.removeOperation(operation: op, identifierRef: object.entity.name! + "://" + identifierString)
