@@ -11,11 +11,11 @@ class MPSDeleteOperation: MPSPersistentStoreOperation
 {
     override func responseDidReceive(response:MPSRequestResponse) throws {
         if response.result == true {
-            let values = response.items as! [[String : Any]]
+            let values = response.items as? [[String : Any]]
             NSLog("Deleted!")
-            if values.count > 0 {
+            if values != nil && values!.count > 0 {
                 let relationships = self.relationshipKeyPathsForPrefetching
-                (self.objectIDs, self.insertedObjectIDs, self.updatedObjectIDs) = try updateObjects(items: values, for: self.entity, relationships:relationships)
+                (self.objectIDs, self.insertedObjectIDs, self.updatedObjectIDs) = try updateObjects(items: values!, for: self.entity, relationships:relationships)
             }
         }
     }
