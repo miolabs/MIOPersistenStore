@@ -247,7 +247,9 @@ open class MIOPersistentStore: NSIncrementalStore
                     if relNode == nil {
                         let delegate = (context!.persistentStoreCoordinator!.persistentStores[0] as! MIOPersistentStore ).delegate!
                         print("FATAL: CD CACHE NODE NULL: \(delegate): \(relationship.destinationEntity!.name!)://\(relID)")
+//                        continue
                     }
+                    
                     objectIDs.insert(relNode!.objectID)
                 }
             }
@@ -655,7 +657,7 @@ open class MIOPersistentStore: NSIncrementalStore
         })
         
         uploadToServer()
-        saveCount += 1;
+        saveCount += 1
         
         if connectionType == .Synchronous {
             saveOperationQueue.waitUntilAllOperationsAreFinished()
