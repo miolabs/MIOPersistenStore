@@ -212,6 +212,7 @@ open class MIOPersistentStore: NSIncrementalStore
             if relNode == nil {
                 let delegate = (context!.persistentStoreCoordinator!.persistentStores[0] as! MIOPersistentStore ).delegate!
                 print("FATAL: CD CACHE NODE NULL: \(delegate): \(objectID.entity.name!).\(relationship.name) -> \(relationship.destinationEntity!.name!)://\(relIdentifier)")
+                return NSNull()
             }
             
             return relNode!.objectID
@@ -246,8 +247,8 @@ open class MIOPersistentStore: NSIncrementalStore
                     let relNode = cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
                     if relNode == nil {
                         let delegate = (context!.persistentStoreCoordinator!.persistentStores[0] as! MIOPersistentStore ).delegate!
-                        print("FATAL: CD CACHE NODE NULL: \(delegate): \(objectID.entity.name!).\(relationship.name)\(relationship.destinationEntity!.name!)://\(relID)")
-//                        continue
+                        print("FATAL: CD CACHE NODE NULL: \(delegate): \(objectID.entity.name!).\(relationship.name) -> \(relationship.destinationEntity!.name!)://\(relID)")
+                        continue
                     }
                     
                     objectIDs.insert(relNode!.objectID)
