@@ -25,6 +25,8 @@ class MPSPersistentStoreOperation: Operation
     var store:MIOPersistentStore
     weak var moc: NSManagedObjectContext?
     
+    public var dbTableName : String { return request.tableName }
+    
     var request:MPSRequest
     var entity:NSEntityDescription
     var relationshipKeyPathsForPrefetching:[String]
