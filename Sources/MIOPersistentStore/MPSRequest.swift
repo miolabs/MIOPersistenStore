@@ -37,13 +37,15 @@ open class MPSRequest : NSObject
     
     open var changeValues: [String:Any?]?
     
-    open var tableName: String // The read tablename in the DB
+    // The read tablename in the DB
+    open var tableName: String {
+        return ( try? entity.baseEntity().to_db_table_name() ) ?? entity.name!
+    }
     
     
     public init(entity:NSEntityDescription){
         self.entity = entity
         self.entityName = entity.name!
-        self.tableName = ( try? entity.baseEntity().to_db_table_name() ) ?? entity.name!
         super.init()
     }
     
@@ -55,7 +57,6 @@ open class MPSRequest : NSObject
         limit  = MIOCoreInt32Value( fetchRequest.fetchLimit  )
         offset = MIOCoreInt32Value( fetchRequest.fetchOffset )
         includeRelationships = fetchRequest.relationshipKeyPathsForPrefetching
-        tableName = ( try? entity.baseEntity().to_db_table_name() ) ?? entity.name!
         super.init()
     }
     
