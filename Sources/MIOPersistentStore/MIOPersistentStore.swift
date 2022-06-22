@@ -668,7 +668,13 @@ open class MIOPersistentStore: NSIncrementalStore
         })
         
         // Adding after sorted out
-        let sortedOperation = operations.sorted { $0.dbTableName < $1.dbTableName }
+        func operation_index( _ a:Any) -> Int {
+            return a is MPSInsertOperation ? 0
+                : a is MPSUpdateOperation ? 1
+                : 2
+        }
+        
+        let sortedOperation = operations.sorted { $0.dbTableName == $1.dbTableName ? operation_index($0) < operation_index($1) : $0.dbTableName < $1.dbTableName }
         for op in sortedOperation {
             addOperation(operation: op, identifierRef: op.entity.name! + "://" + op.identifier.uppercased())
         }
