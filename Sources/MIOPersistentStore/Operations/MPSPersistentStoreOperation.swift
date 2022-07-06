@@ -181,14 +181,14 @@ class MPSPersistentStoreOperation: Operation
             guard let identifierString = store.identifierForItem(values, entityName: entityName) else {
                 throw MIOPersistentStoreError.identifierIsNull()
             }
-            
-            let fr =  NSFetchRequest<NSManagedObject>(entityName: entityName)
-            fr.entity = entity
-            let new_request = store.delegate!.store(store: store, fetchRequest: fr, serverID: identifierString)!
-            
-            try new_request.execute( )
-            
-            entityValues = new_request.resultItems!.first as! [String:Any]
+            // TODO: remove this fix when entity core get all merged values from all derivated classes
+//            let fr =  NSFetchRequest<NSManagedObject>(entityName: entityName)
+//            fr.entity = entity
+//            let new_request = store.delegate!.store(store: store, fetchRequest: fr, serverID: identifierString)!
+//
+//            try new_request.execute( )
+//
+//            entityValues = new_request.resultItems!.first as! [String:Any]
         }
 //        if fetchEntity.subentities.first == nil {
 //            entityName = fetchEntity.name!
