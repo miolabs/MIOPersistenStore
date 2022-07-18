@@ -21,9 +21,7 @@ public protocol MIOPersistentStoreDelegate : NSObjectProtocol
     //func store(_ store:MWSPersistentStore, requestForEntityName entityName:String, url:URL, bodyData:Data?, httpMethod:String) -> MWSRequest
     
     func store(store:MIOPersistentStore, fetchRequest:NSFetchRequest<NSManagedObject>, serverID:String?) -> MPSRequest?
-    func store(store: MIOPersistentStore, insertRequestForObject object: NSManagedObject, dependencyIDs:inout [String]) -> MPSRequest?
-    func store(store: MIOPersistentStore, updateRequestForObject object: NSManagedObject, dependencyIDs:inout [String]) -> MPSRequest?
-    func store(store: MIOPersistentStore, deleteRequestForObject object: NSManagedObject) -> MPSRequest?
+    func store(store:MIOPersistentStore, saveRequest:NSSaveChangesRequest) -> MPSRequest?
     
     func store(store: MIOPersistentStore, identifierForObject object:NSManagedObject) -> UUID?
     func store(store: MIOPersistentStore, identifierFromItem item:[String:Any], fetchEntityName: String) -> String?
@@ -636,7 +634,9 @@ open class MIOPersistentStore: NSIncrementalStore
     }()
     
     func saveObjects(request:NSSaveChangesRequest, with context:NSManagedObjectContext) throws {
-        self.delegate.store
+        let request = self.delegate?.store(store: self, saveRequest: request)
+        try request?.execute()
+                
         
 //        try request.insertedObjects?.forEach({ (obj) in
 //            if obj.changedValues().count > 0 {
@@ -666,29 +666,30 @@ open class MIOPersistentStore: NSIncrementalStore
 //            //            relationshipValuesByReferenceID.removeObject(forKey: referenceID)
 //        })
 //
-        // Adding after sorted out
-        func operation_index( _ a:Any) -> Int {
-            return a is MPSInsertOperation ? 0
-                : a is MPSUpdateOperation ? 1
-                : 2
-        }
-        
-        let sortedOperation = operations.sorted { $0.dbTableName == $1.dbTableName ? operation_index($0) < operation_index($1) : $0.dbTableName < $1.dbTableName }
-        for op in sortedOperation {
-            addOperation(operation: op, identifierRef: op.entity.name! + "://" + op.identifier.uppercased())
-        }
-        
-        uploadToServer()
-        saveCount += 1
-        
-        if connectionType == .Synchronous {
-            saveOperationQueue.waitUntilAllOperationsAreFinished()
-            if insertError != nil { throw insertError! }
-            if updateError != nil { throw updateError! }
-            if deleteError != nil { throw deleteError! }
-        }
+//        // Adding after sorted out
+//        func operation_index( _ a:Any) -> Int {
+//            return a is MPSInsertOperation ? 0
+//                : a is MPSUpdateOperation ? 1
+//                : 2
+//        }
+//
+//        let sortedOperation = operations.sorted { $0.dbTableName == $1.dbTableName ? operation_index($0) < operation_index($1) : $0.dbTableName < $1.dbTableName }
+//        for op in sortedOperation {
+//            addOperation(operation: op, identifierRef: op.entity.name! + "://" + op.identifier.uppercased())
+//        }
+//
+//        uploadToServer()
+//        saveCount += 1
+//
+//        if connectionType == .Synchronous {
+//            saveOperationQueue.waitUntilAllOperationsAreFinished()
+//            if insertError != nil { throw insertError! }
+//            if updateError != nil { throw updateError! }
+//            if deleteError != nil { throw deleteError! }
+//        }
     }
-    
+
+    /*
     func insertObjectIntoServer(object:NSManagedObject, context:NSManagedObjectContext, onError: @escaping ( _ error: Error ) -> Void ) throws  -> MPSPersistentStoreOperation? {
         
         guard let identifier = delegate?.store(store: self, identifierForObject: object) else {
@@ -797,8 +798,9 @@ open class MIOPersistentStore: NSIncrementalStore
 //        addOperation(operation: op, identifierRef: object.entity.name! + "://" + identifierString)
         return op
     }
-    
+    */
     let deletedObjects = NSMutableSet()
+    /*
     func deleteObjectOnServer(object:NSManagedObject, context:NSManagedObjectContext, onError: @escaping ( _ error: Error ) -> Void ) throws -> MPSPersistentStoreOperation? {
         
         guard let identifier = delegate?.store(store: self, identifierForObject: object) else {
@@ -857,6 +859,7 @@ open class MIOPersistentStore: NSIncrementalStore
 //        addOperation(operation: op, identifierRef: object.entity.name! + "://" + identifierString)
         return op
     }
+    */
     
     var saveOperationsByReferenceID = [String:MPSPersistentStoreOperation]()
     var uploadingOperations = [String:Any]()
