@@ -636,40 +636,36 @@ open class MIOPersistentStore: NSIncrementalStore
     }()
     
     func saveObjects(request:NSSaveChangesRequest, with context:NSManagedObjectContext) throws {
-        var insertError: Error?
-        var updateError: Error?
-        var deleteError: Error?
+        self.delegate.store
         
-        var operations:[MPSPersistentStoreOperation] = []
-        
-        try request.insertedObjects?.forEach({ (obj) in
-            if obj.changedValues().count > 0 {
-                if let op = try insertObjectIntoServer(object: obj, context: context, onError: { insertError = $0 } ) {
-                    operations.append( op )
-                }
-                //insertObjectIntoCache(object: obj)
-            }
-        })
-        
-        try request.updatedObjects?.forEach({ (obj) in
-            if obj.changedValues().count > 0 {
-                if let op = try updateObjectOnServer(object: obj, context: context, onError: { updateError = $0 } ) {
-                    operations.append( op )
-                }
-                //updateObjectOnCache(object: obj)
-            }
-        })
-        
-        try request.deletedObjects?.forEach({ (obj) in
-            if let op = try deleteObjectOnServer(object: obj, context: context, onError: { deleteError = $0 } ) {
-                operations.append( op )
-            }
-            //deleteObjectOnCache(object: obj)
-            //            let serverID = referenceObject(for: obj.objectID) as! String
-            //            let referenceID = obj.entity.name! + "://" + serverID;
-            //            relationshipValuesByReferenceID.removeObject(forKey: referenceID)
-        })
-        
+//        try request.insertedObjects?.forEach({ (obj) in
+//            if obj.changedValues().count > 0 {
+//                if let op = try insertObjectIntoServer(object: obj, context: context, onError: { insertError = $0 } ) {
+//                    operations.append( op )
+//                }
+//                //insertObjectIntoCache(object: obj)
+//            }
+//        })
+//
+//        try request.updatedObjects?.forEach({ (obj) in
+//            if obj.changedValues().count > 0 {
+//                if let op = try updateObjectOnServer(object: obj, context: context, onError: { updateError = $0 } ) {
+//                    operations.append( op )
+//                }
+//                //updateObjectOnCache(object: obj)
+//            }
+//        })
+//
+//        try request.deletedObjects?.forEach({ (obj) in
+//            if let op = try deleteObjectOnServer(object: obj, context: context, onError: { deleteError = $0 } ) {
+//                operations.append( op )
+//            }
+//            //deleteObjectOnCache(object: obj)
+//            //            let serverID = referenceObject(for: obj.objectID) as! String
+//            //            let referenceID = obj.entity.name! + "://" + serverID;
+//            //            relationshipValuesByReferenceID.removeObject(forKey: referenceID)
+//        })
+//
         // Adding after sorted out
         func operation_index( _ a:Any) -> Int {
             return a is MPSInsertOperation ? 0
