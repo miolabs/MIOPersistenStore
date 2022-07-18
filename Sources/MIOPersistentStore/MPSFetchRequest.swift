@@ -37,13 +37,13 @@ open class MPSFetchRequest : MPSRequest
         return ( try? entity.baseEntity().to_db_table_name() ) ?? entity.name!
     }
     
-    public init(entity:NSEntityDescription){
+    public init( entity:NSEntityDescription ){
         self.entity = entity
         self.entityName = entity.name!
         super.init()
     }
             
-    public init(fetchRequest:NSFetchRequest<NSManagedObject>) {
+    public init( fetchRequest:NSFetchRequest<NSManagedObject> ) {
         entity = fetchRequest.entity!
         entityName = entity.name!
         predicate = fetchRequest.predicate
