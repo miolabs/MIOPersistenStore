@@ -17,9 +17,9 @@ import MIOCoreData
 
 open class MPSSaveRequest : MPSRequest
 {
-    var insertedObjects:Set<NSManagedObject>
-    var updatedObjects :Set<NSManagedObject>
-    var deletedObjects :Set<NSManagedObject>
+    public var insertedObjects:Set<NSManagedObject>
+    public var updatedObjects :Set<NSManagedObject>
+    public var deletedObjects :Set<NSManagedObject>
     
     public init( saveRequest: NSSaveChangesRequest ) {
         insertedObjects = saveRequest.insertedObjects ?? Set()
