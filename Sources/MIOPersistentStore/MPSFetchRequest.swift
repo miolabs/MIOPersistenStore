@@ -29,6 +29,7 @@ open class MPSFetchRequest : MPSRequest
     open var limit: Int32?
     open var offset: Int32?
     open var includeRelationships: [String]?
+    open var version: Int64?
     
     open var changeValues: [String:Any?]?
     
@@ -51,6 +52,7 @@ open class MPSFetchRequest : MPSRequest
         limit  = MIOCoreInt32Value( fetchRequest.fetchLimit  )
         offset = MIOCoreInt32Value( fetchRequest.fetchOffset )
         includeRelationships = fetchRequest.relationshipKeyPathsForPrefetching
+        version = fetchRequest.version
         super.init()
     }    
 }
