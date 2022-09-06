@@ -640,12 +640,11 @@ open class MIOPersistentStore: NSIncrementalStore
         var updateError: Error?
         var deleteError: Error?
         
-        var operations:[MPSPersistentStoreOperation] = []
-        
         try request.insertedObjects?.forEach({ (obj) in
             if obj.changedValues().count > 0 {
                 if let op = try insertObjectIntoServer(object: obj, context: context, onError: { insertError = $0 } ) {
-                    operations.append( op )
+//                    operations.append( op )
+                    addOperation(operation: op, identifierRef: op.entity.name! + "://" + op.identifier.uppercased())
                 }
                 //insertObjectIntoCache(object: obj)
             }
@@ -654,7 +653,8 @@ open class MIOPersistentStore: NSIncrementalStore
         try request.updatedObjects?.forEach({ (obj) in
             if obj.changedValues().count > 0 {
                 if let op = try updateObjectOnServer(object: obj, context: context, onError: { updateError = $0 } ) {
-                    operations.append( op )
+//                    operations.append( op )
+                    addOperation(operation: op, identifierRef: op.entity.name! + "://" + op.identifier.uppercased())
                 }
                 //updateObjectOnCache(object: obj)
             }
@@ -662,7 +662,8 @@ open class MIOPersistentStore: NSIncrementalStore
         
         try request.deletedObjects?.forEach({ (obj) in
             if let op = try deleteObjectOnServer(object: obj, context: context, onError: { deleteError = $0 } ) {
-                operations.append( op )
+//                operations.append( op )
+                addOperation(operation: op, identifierRef: op.entity.name! + "://" + op.identifier.uppercased())
             }
             //deleteObjectOnCache(object: obj)
             //            let serverID = referenceObject(for: obj.objectID) as! String
@@ -670,18 +671,7 @@ open class MIOPersistentStore: NSIncrementalStore
             //            relationshipValuesByReferenceID.removeObject(forKey: referenceID)
         })
         
-        // Adding after sorted out
-        func operation_index( _ a:Any) -> Int {
-            return a is MPSInsertOperation ? 0
-                : a is MPSUpdateOperation ? 1
-                : 2
-        }
-        
-        let sortedOperation = operations.sorted { $0.dbTableName == $1.dbTableName ? operation_index($0) < operation_index($1) : $0.dbTableName < $1.dbTableName }
-        for op in sortedOperation {
-            addOperation(operation: op, identifierRef: op.entity.name! + "://" + op.identifier.uppercased())
-        }
-        
+                
         uploadToServer()
         saveCount += 1
         
@@ -901,11 +891,27 @@ open class MIOPersistentStore: NSIncrementalStore
         //                }
         //            }
         
-        for (refID, op) in saveOperationsByReferenceID {
+        
+        // Adding after sorted out
+        func operation_index( _ a:Any) -> Int {
+            return a is MPSInsertOperation ? 0
+                :  a is MPSUpdateOperation ? 1
+                :  -1
+        }
+        
+        let sortedOperations = saveOperationsByReferenceID.values.sorted { $0.dbTableName == $1.dbTableName ? operation_index($0) < operation_index($1) : $0.dbTableName < $1.dbTableName }
+        for op in sortedOperations {
+            let refID = op.entity.name! + "://" + op.identifier.uppercased()
             checkOperationDependecies(operation:op, dependencies: op.dependencyIDs)
             addUploadingOperation(operation:op, referenceID: refID)
             saveOperationQueue.addOperation(op);
         }
+        
+//        for (refID, op) in saveOperationsByReferenceID {
+//            checkOperationDependecies(operation:op, dependencies: op.dependencyIDs)
+//            addUploadingOperation(operation:op, referenceID: refID)
+//            saveOperationQueue.addOperation(op);
+//        }
         
         saveOperationsByReferenceID = [String:MPSPersistentStoreOperation]()
         uploadingOperations = [:]
