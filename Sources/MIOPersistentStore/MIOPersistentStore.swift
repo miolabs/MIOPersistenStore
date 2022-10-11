@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import LoggerAPI
+//import LoggerAPI
 
 #if APPLE_CORE_DATA
 import CoreData
@@ -213,7 +213,7 @@ open class MIOPersistentStore: NSIncrementalStore
             if relNode == nil {
                 let delegate = (context!.persistentStoreCoordinator!.persistentStores[0] as! MIOPersistentStore ).delegate!
                 print("FATAL: CD CACHE NODE NULL: \(delegate): \(objectID.entity.name!).\(relationship.name) -> \(relationship.destinationEntity!.name!)://\(relIdentifier)")
-                Log.error( "FATAL: CD CACHE NODE NULL: \(delegate): \(objectID.entity.name!).\(relationship.name) -> \(relationship.destinationEntity!.name!)://\(relIdentifier)" )
+//                Log.error( "FATAL: CD CACHE NODE NULL: \(delegate): \(objectID.entity.name!).\(relationship.name) -> \(relationship.destinationEntity!.name!)://\(relIdentifier)" )
                 return NSNull()
             }
             
@@ -249,7 +249,7 @@ open class MIOPersistentStore: NSIncrementalStore
                     let relNode = cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
                     if relNode == nil {
                         let delegate = (context!.persistentStoreCoordinator!.persistentStores[0] as! MIOPersistentStore ).delegate!
-                        Log.error ("FATAL: CD CACHE NODE NULL: \(delegate): \(objectID.entity.name!).\(relationship.name) -> \(relationship.destinationEntity!.name!)://\(relID)")
+//                        Log.error ("FATAL: CD CACHE NODE NULL: \(delegate): \(objectID.entity.name!).\(relationship.name) -> \(relationship.destinationEntity!.name!)://\(relID)")
                         print ("FATAL: CD CACHE NODE NULL: \(delegate): \(objectID.entity.name!).\(relationship.name) -> \(relationship.destinationEntity!.name!)://\(relID)")
                         continue
                     }
@@ -352,7 +352,7 @@ open class MIOPersistentStore: NSIncrementalStore
         
         let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier.uppercased(), entity: entity)
         
-        Log.verbose( "CacheNode Update: \(referenceID)" )
+//        Log.verbose( "CacheNode Update: \(referenceID)" )
         
         cacheNodeQueue.sync {
             let node = nodesByReferenceID[referenceID]
@@ -367,7 +367,7 @@ open class MIOPersistentStore: NSIncrementalStore
     func cacheNode(deleteNodeAtIdentifier identifier:String, entity:NSEntityDescription) {
         let id = identifier.uppercased()
         let referenceID = MPSCacheNode.referenceID(withIdentifier: id, entity: entity)
-        Log.verbose( "CacheNode Delete: \(referenceID)" )
+//        Log.verbose( "CacheNode Delete: \(referenceID)" )
         
         _ = cacheNodeQueue.sync {
             nodesByReferenceID.removeValue(forKey: referenceID)
