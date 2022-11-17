@@ -92,7 +92,7 @@ class MPSPersistentStoreOperation: Operation
     
     override func start() {
         
-        assert(self.uploading == false, "MWSPersistenStoreUploadOperation: Trying to start again on an executing operation");
+        assert(self.uploading == false, "MWSPersistenStoreUploadOperation: Trying to start again on an executing operation")
         
         if self.isCancelled {
             return
