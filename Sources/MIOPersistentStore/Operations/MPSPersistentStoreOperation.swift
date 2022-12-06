@@ -15,6 +15,22 @@ import MIOCoreData
 #endif
 
 
+enum MPSError : Error
+{
+    case invalidType(_ key:String, _ value:Any?, _ functionName: String = #function)
+}
+
+extension MPSError: LocalizedError
+{
+    public var errorDescription: String? {
+        switch self {
+        case let .invalidType(key, value, functionName):
+            return "[MIOPersistentStore] Received Invalid value \(value ?? "null") for key \(key)"
+        }
+    }
+}
+
+
 class MPSPersistentStoreOperation: Operation
 {
     private var _identifier:String!
@@ -275,14 +291,23 @@ class MPSPersistentStoreOperation: Operation
                 else {
                     // check type
                     switch attr.attributeType {
-                    case .booleanAttributeType, .decimalAttributeType, .doubleAttributeType, .floatAttributeType, .integer16AttributeType, .integer32AttributeType, .integer64AttributeType:
-                        assert(newValue is NSNumber, "[Black Magic] Received Number with incorrect type for key \(key)")
+                    case .booleanAttributeType,
+                         .decimalAttributeType,
+                         .doubleAttributeType,
+                         .floatAttributeType,
+                         .integer16AttributeType,
+                         .integer32AttributeType,
+                         .integer64AttributeType:
+                        if !(newValue is NSNumber) {throw MPSError.invalidType(key, newValue) }
+//                        assert(newValue is NSNumber, "[Black Magic] Received Number with incorrect type for key \(key)")
                         
                     case .stringAttributeType:
-                        assert(newValue is NSString, "[Black Magic] Received String with incorrect type for key \(key)")
+                        if !(newValue is NSString) {throw MPSError.invalidType(key, newValue) }
+//                        assert(newValue is NSString, "[Black Magic] Received String with incorrect type for key \(key)")
                     
                     default:
-                        assert(true)
+                        throw MPSError.invalidType( key, newValue )
+//                      assert(true)
                     }
                     parsedValues[key] = newValue
                 }
