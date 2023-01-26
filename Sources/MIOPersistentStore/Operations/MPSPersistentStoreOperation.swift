@@ -345,10 +345,21 @@ class MPSPersistentStoreOperation: Operation
                     let serverValues = value as! [Any]
                     for relatedItem in serverValues {
                         
-                        guard let ri = relatedItem as? [String:Any], let dst = relEntity.destinationEntity, let node = relKeyPathNode else {
-                            print("item: \(relatedItem), name: \(relEntity.name), dst: \(relEntity.destinationEntity)")
+                        guard let ri = relatedItem as? [String:Any] else {
+                            print("item: \(relatedItem), name: \(relEntity.name), dst: \(String(describing: relEntity.destinationEntity))")
                             throw MIOPersistentStoreError.invalidValueType( entityName: relEntity.name, key: serverKey, value: relatedItem )
                         }
+
+                        guard let dst = relEntity.destinationEntity else {
+                            print("item: \(relatedItem), name: \(relEntity.name), dst: \(String(describing: relEntity.destinationEntity))")
+                            throw MIOPersistentStoreError.invalidValueType( entityName: relEntity.name, key: serverKey, value: relEntity.destinationEntity ?? "relEntity.destinationEntity is nil" )
+                        }
+
+                        guard let node = relKeyPathNode else {
+                            print("item: \(relatedItem), name: \(relEntity.name), dst: \(String(describing: relEntity.destinationEntity))")
+                            throw MIOPersistentStoreError.invalidValueType( entityName: relEntity.name, key: serverKey, value: relKeyPathNode ?? "relKeyPathNode is nil" )
+                        }
+
                         
                         try updateObject(values: ri, fetchEntity: dst, objectID: nil, relationshipNodes: node, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
                         //let serverID = webStore.delegate?.webStore(store: webStore, serverIDForItem: relatedItem, entityName: relEntity.destinationEntity!.name!)
