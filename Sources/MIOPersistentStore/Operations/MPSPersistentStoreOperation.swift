@@ -352,16 +352,10 @@ class MPSPersistentStoreOperation: Operation
 
                         guard let dst = relEntity.destinationEntity else {
                             print("dst: \(String(describing: relEntity.destinationEntity))")
-                            throw MIOPersistentStoreError.invalidValueType( entityName: relEntity.name, key: serverKey, value: relEntity.destinationEntity ?? "relEntity.destinationEntity is nil" )
+                            throw MIOPersistentStoreError.invalidValueType( entityName: relEntity.name, key: serverKey, value: relEntity.destinationEntity?.name ?? "relEntity.destinationEntity is nil" )
                         }
 
-                        guard let node = relKeyPathNode else {
-                            print("node: \(String(describing: relKeyPathNode))")
-                            throw MIOPersistentStoreError.invalidValueType( entityName: relEntity.name, key: serverKey, value: relKeyPathNode ?? "relKeyPathNode is nil" )
-                        }
-
-                        
-                        try updateObject(values: ri, fetchEntity: dst, objectID: nil, relationshipNodes: node, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
+                        try updateObject(values: ri, fetchEntity: dst, objectID: nil, relationshipNodes: relKeyPathNode, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
                         //let serverID = webStore.delegate?.webStore(store: webStore, serverIDForItem: relatedItem, entityName: relEntity.destinationEntity!.name!)
                         guard let identifierString = store.identifierForItem(relatedItem as! [String:Any], entityName: relEntity.destinationEntity!.name!) else {
                             throw MIOPersistentStoreError.identifierIsNull()
