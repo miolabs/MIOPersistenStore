@@ -346,12 +346,12 @@ class MPSPersistentStoreOperation: Operation
                     for relatedItem in serverValues {
                         
                         guard let ri = relatedItem as? [String:Any] else {
-                            print("item: \(relatedItem)")
+                            print("[MIOPersistentStoreOperation] item: \(relatedItem)")
                             throw MIOPersistentStoreError.invalidValueType( entityName: relEntity.name, key: serverKey, value: relatedItem )
                         }
 
                         guard let dst = relEntity.destinationEntity else {
-                            print("dst: \(String(describing: relEntity.destinationEntity))")
+                            print("[MIOPersistentStoreOperation] dst: \(String(describing: relEntity.destinationEntity))")
                             throw MIOPersistentStoreError.invalidValueType( entityName: relEntity.name, key: serverKey, value: relEntity.destinationEntity?.name ?? "relEntity.destinationEntity is nil" )
                         }
 
