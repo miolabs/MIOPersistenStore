@@ -41,7 +41,8 @@ class MPSPersistentStoreOperation: Operation
     var store:MIOPersistentStore
     weak var moc: NSManagedObjectContext?
     
-    public var dbTableName : String { return request.tableName }
+    //TODO:Check
+    public var dbTableName : String { return "" } //request.tableName }
     
     var request:MPSRequest
     var entity:NSEntityDescription
@@ -189,12 +190,12 @@ class MPSPersistentStoreOperation: Operation
     func updateObject(values:[String:Any], fetchEntity:NSEntityDescription, objectID:NSManagedObjectID?, relationshipNodes:NSMutableDictionary?, objectIDs:NSMutableSet, insertedObjectIDs:NSMutableSet, updatedObjectIDs:NSMutableSet) throws {
         
         var entity = fetchEntity
-        var entityValues: [String:Any] = values
+        let entityValues: [String:Any] = values
         let entityName = values["classname"] as! String // ?? fetchEntity.name!
         if entityName != fetchEntity.name {
             entity = fetchEntity.managedObjectModel.entitiesByName[entityName]!
 
-            guard let identifierString = store.identifierForItem(values, entityName: entityName) else {
+            guard let _identifierString = store.identifierForItem(values, entityName: entityName) else {
                 throw MIOPersistentStoreError.identifierIsNull()
             }
             // TODO: remove this fix when entity core get all merged values from all derivated classes

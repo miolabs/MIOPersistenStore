@@ -7,7 +7,6 @@
 //
 
 import Foundation
-//import LoggerAPI
 
 #if APPLE_CORE_DATA
 import CoreData
@@ -21,9 +20,7 @@ public protocol MIOPersistentStoreDelegate : NSObjectProtocol
     //func store(_ store:MWSPersistentStore, requestForEntityName entityName:String, url:URL, bodyData:Data?, httpMethod:String) -> MWSRequest
     
     func store(store:MIOPersistentStore, fetchRequest:NSFetchRequest<NSManagedObject>, serverID:String?) -> MPSRequest?
-    func store(store: MIOPersistentStore, insertRequestForObject object: NSManagedObject, dependencyIDs:inout [String]) -> MPSRequest?
-    func store(store: MIOPersistentStore, updateRequestForObject object: NSManagedObject, dependencyIDs:inout [String]) -> MPSRequest?
-    func store(store: MIOPersistentStore, deleteRequestForObject object: NSManagedObject) -> MPSRequest?
+    func store(store:MIOPersistentStore, saveRequest:NSSaveChangesRequest) -> MPSRequest?
     
     func store(store: MIOPersistentStore, identifierForObject object:NSManagedObject) -> UUID?
     func store(store: MIOPersistentStore, identifierFromItem item:[String:Any], fetchEntityName: String) -> String?
@@ -636,53 +633,62 @@ open class MIOPersistentStore: NSIncrementalStore
     }()
     
     func saveObjects(request:NSSaveChangesRequest, with context:NSManagedObjectContext) throws {
-        var insertError: Error?
-        var updateError: Error?
-        var deleteError: Error?
-        
-        try request.insertedObjects?.forEach({ (obj) in
-            if obj.changedValues().count > 0 {
-                if let op = try insertObjectIntoServer(object: obj, context: context, onError: { insertError = $0 } ) {
-//                    operations.append( op )
-                    addOperation(operation: op, identifierRef: op.entity.name! + "://" + op.identifier.uppercased())
-                }
-                //insertObjectIntoCache(object: obj)
-            }
-        })
-        
-        try request.updatedObjects?.forEach({ (obj) in
-            if obj.changedValues().count > 0 {
-                if let op = try updateObjectOnServer(object: obj, context: context, onError: { updateError = $0 } ) {
-//                    operations.append( op )
-                    addOperation(operation: op, identifierRef: op.entity.name! + "://" + op.identifier.uppercased())
-                }
-                //updateObjectOnCache(object: obj)
-            }
-        })
-        
-        try request.deletedObjects?.forEach({ (obj) in
-            if let op = try deleteObjectOnServer(object: obj, context: context, onError: { deleteError = $0 } ) {
-//                operations.append( op )
-                addOperation(operation: op, identifierRef: op.entity.name! + "://" + op.identifier.uppercased())
-            }
-            //deleteObjectOnCache(object: obj)
-            //            let serverID = referenceObject(for: obj.objectID) as! String
-            //            let referenceID = obj.entity.name! + "://" + serverID;
-            //            relationshipValuesByReferenceID.removeObject(forKey: referenceID)
-        })
-        
+        let request = self.delegate?.store(store: self, saveRequest: request)
+        try request?.execute()
                 
-        uploadToServer()
-        saveCount += 1
         
-        if connectionType == .Synchronous {
-            saveOperationQueue.waitUntilAllOperationsAreFinished()
-            if insertError != nil { throw insertError! }
-            if updateError != nil { throw updateError! }
-            if deleteError != nil { throw deleteError! }
-        }
+//        try request.insertedObjects?.forEach({ (obj) in
+//            if obj.changedValues().count > 0 {
+//                if let op = try insertObjectIntoServer(object: obj, context: context, onError: { insertError = $0 } ) {
+//                    operations.append( op )
+//                }
+//                //insertObjectIntoCache(object: obj)
+//            }
+//        })
+//
+//        try request.updatedObjects?.forEach({ (obj) in
+//            if obj.changedValues().count > 0 {
+//                if let op = try updateObjectOnServer(object: obj, context: context, onError: { updateError = $0 } ) {
+//                    operations.append( op )
+//                }
+//                //updateObjectOnCache(object: obj)
+//            }
+//        })
+//
+//        try request.deletedObjects?.forEach({ (obj) in
+//            if let op = try deleteObjectOnServer(object: obj, context: context, onError: { deleteError = $0 } ) {
+//                operations.append( op )
+//            }
+//            //deleteObjectOnCache(object: obj)
+//            //            let serverID = referenceObject(for: obj.objectID) as! String
+//            //            let referenceID = obj.entity.name! + "://" + serverID;
+//            //            relationshipValuesByReferenceID.removeObject(forKey: referenceID)
+//        })
+//
+//        // Adding after sorted out
+//        func operation_index( _ a:Any) -> Int {
+//            return a is MPSInsertOperation ? 0
+//                : a is MPSUpdateOperation ? 1
+//                : 2
+//        }
+//
+//        let sortedOperation = operations.sorted { $0.dbTableName == $1.dbTableName ? operation_index($0) < operation_index($1) : $0.dbTableName < $1.dbTableName }
+//        for op in sortedOperation {
+//            addOperation(operation: op, identifierRef: op.entity.name! + "://" + op.identifier.uppercased())
+//        }
+//
+//        uploadToServer()
+//        saveCount += 1
+//
+//        if connectionType == .Synchronous {
+//            saveOperationQueue.waitUntilAllOperationsAreFinished()
+//            if insertError != nil { throw insertError! }
+//            if updateError != nil { throw updateError! }
+//            if deleteError != nil { throw deleteError! }
+//        }
     }
-    
+
+    /*
     func insertObjectIntoServer(object:NSManagedObject, context:NSManagedObjectContext, onError: @escaping ( _ error: Error ) -> Void ) throws  -> MPSPersistentStoreOperation? {
         
         guard let identifier = delegate?.store(store: self, identifierForObject: object) else {
@@ -791,8 +797,9 @@ open class MIOPersistentStore: NSIncrementalStore
 //        addOperation(operation: op, identifierRef: object.entity.name! + "://" + identifierString)
         return op
     }
-    
+    */
     let deletedObjects = NSMutableSet()
+    /*
     func deleteObjectOnServer(object:NSManagedObject, context:NSManagedObjectContext, onError: @escaping ( _ error: Error ) -> Void ) throws -> MPSPersistentStoreOperation? {
         
         guard let identifier = delegate?.store(store: self, identifierForObject: object) else {
@@ -851,6 +858,7 @@ open class MIOPersistentStore: NSIncrementalStore
 //        addOperation(operation: op, identifierRef: object.entity.name! + "://" + identifierString)
         return op
     }
+    */
     
     var saveOperationsByReferenceID = [String:MPSPersistentStoreOperation]()
     var uploadingOperations = [String:Any]()
