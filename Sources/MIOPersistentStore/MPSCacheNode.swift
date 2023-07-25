@@ -16,21 +16,21 @@ import MIOCoreData
 
 open class MPSCacheNode : NSObject
 {
-    static func referenceID(withIdentifier identifier:String, entity:NSEntityDescription) -> String {
-        return entity.name! + "://" + identifier
+    static func referenceID(withIdentifier identifier:UUID, entity:NSEntityDescription) -> String {
+        return entity.name! + "://" + identifier.uuidString.uppercased()
     }
     
-    let _identifier:String
+    let _identifier:UUID
     let _entity:NSEntityDescription
     var _values:[String:Any]
     var _version:UInt64 = 0
     var _objectID:NSManagedObjectID
  
     open var version: UInt64 { return _version }
-    open var referenceID:String { get { return _entity.name! + "://" + _identifier } }
+    open var referenceID:String { get { return _entity.name! + "://" + _identifier.uuidString.uppercased() } }
     open var objectID:NSManagedObjectID { get { return _objectID } }
     
-    init(identifier:String, entity:NSEntityDescription, withValues values:[String:Any], version:UInt64, objectID:NSManagedObjectID){
+    init(identifier:UUID, entity:NSEntityDescription, withValues values:[String:Any], version:UInt64, objectID:NSManagedObjectID){
         _identifier = identifier
         _values = MPSCacheNode.parse_values(values, entity: entity)
         _version = version
@@ -56,7 +56,10 @@ open class MPSCacheNode : NSObject
                 return obj.objectID._referenceObject
             }
             else if let id = value as? String {
-                return id
+                return UUID(uuidString: id ) ?? NSNull()
+            }
+            else if let uuid = value as? UUID {
+                return uuid
             }
             
             return NSNull()
@@ -72,22 +75,28 @@ open class MPSCacheNode : NSObject
                 }
                 else {
                     if v is Set<NSManagedObject> {
-                        new_values[key] = (v as! Set<NSManagedObject>).map { reference(from: $0) }
+                        new_values[key] = (v as! Set<NSManagedObject>).map { reference( from: $0 ) }
                     }
                     else if v is Set<NSManagedObjectID> {
-                        new_values[key] = (v as! Set<NSManagedObjectID>).map { reference(from: $0) }
+                        new_values[key] = (v as! Set<NSManagedObjectID>).map { reference( from: $0 ) }
                     }
                     else if v is Set<String> {
-                        new_values[key] = (v as! Set<String>).map { reference(from: $0) }
+                        new_values[key] = (v as! Set<String>).map { reference( from: $0 ) }
+                    }
+                    else if v is Set<UUID> {
+                        new_values[key] = v //(v as! Set<UUID>).map { reference( from: $0 ) }
                     }
                     else if v is Array<NSManagedObject> {
-                        new_values[key] = (v as! Array<NSManagedObject>).map { reference(from: $0) }
+                        new_values[key] = (v as! Array<NSManagedObject>).map { reference( from: $0 ) }
                     }
                     else if v is Array<NSManagedObjectID> {
-                        new_values[key] = (v as! Array<NSManagedObjectID>).map { reference(from: $0) }
+                        new_values[key] = (v as! Array<NSManagedObjectID>).map { reference( from: $0 ) }
                     }
                     else if v is Array<String> {
-                        new_values[key] = (v as! Array<String>).map { reference(from: $0) }
+                        new_values[key] = (v as! Array<String>).map { reference( from: $0 ) }
+                    }
+                    else if v is Array<UUID> {
+                        new_values[key] = v //(v as! Array<UUID>).map { reference( from: $0 ) }
                     }
                 }
             }

@@ -195,7 +195,7 @@ class MPSPersistentStoreOperation: Operation
         if entityName != fetchEntity.name {
             entity = fetchEntity.managedObjectModel.entitiesByName[entityName]!
 
-            guard let _identifierString = store.identifierForItem(values, entityName: entityName) else {
+            guard let _ = store.identifierForItem(values, entityName: entityName) else {
                 throw MIOPersistentStoreError.identifierIsNull()
             }
             // TODO: remove this fix when entity core get all merged values from all derivated classes
@@ -219,32 +219,32 @@ class MPSPersistentStoreOperation: Operation
 //        }
         
         // Check the objects inside values
-        let parsedValues = try checkRelationships(values:entityValues, entity: entity, relationshipNodes: relationshipNodes, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
+        let parsedValues = try checkRelationships( values:entityValues, entity: entity, relationshipNodes: relationshipNodes, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs )
         
-        guard let identifierString = store.identifierForItem(parsedValues, entityName: fetchEntity.name!) else {
+        guard let identifier = store.identifierForItem( parsedValues, entityName: fetchEntity.name! ) else {
             throw MIOPersistentStoreError.identifierIsNull()
         }
         
-        let version = store.versionForItem(values, entityName: fetchEntity.name!)
+        let version = store.versionForItem( values, entityName: fetchEntity.name! )
         
         // Check if the server is deleting the object and ignoring
 //        if store.cacheNode(deletingNodeAtServerID:serverID, entity:entity) == true {
 //            return
 //        }
-                
-        var node = store.cacheNode(withIdentifier: identifierString, entity: entity)
+                        
+        var node = store.cacheNode( withIdentifier: identifier, entity: entity )
         if node == nil {
             // --- NSLog("New version: " + entity.name! + " (\(version))");
-            node = store.cacheNode(newNodeWithValues: parsedValues, identifier: identifierString, version: version, entity: entity, objectID: objectID)
+            node = store.cacheNode( newNodeWithValues: parsedValues, identifier: identifier, version: version, entity: entity, objectID: objectID )
             insertedObjectIDs.add(node!.objectID)
         }
-        else if version > node!.version{
+        else if version > node!.version {
             // --- NSLog("Update version: \(entity.name!) (\(node!.version) -> \(version))")
-            store.cacheNode(updateNodeWithValues: parsedValues, identifier: identifierString, version: version, entity: entity)
-            updatedObjectIDs.add(node!.objectID)
+            store.cacheNode( updateNodeWithValues: parsedValues, identifier: identifier, version: version, entity: entity )
+            updatedObjectIDs.add( node!.objectID )
         }
         
-        objectIDs.add(node!.objectID)
+        objectIDs.add( node!.objectID )
     }
     
     private func checkRelationships(values : [String : Any], entity:NSEntityDescription, relationshipNodes : NSMutableDictionary?, objectIDs:NSMutableSet, insertedObjectIDs:NSMutableSet, updatedObjectIDs:NSMutableSet) throws -> [String : Any] {
@@ -340,7 +340,7 @@ class MPSPersistentStoreOperation: Operation
                 }
                 else {
                     
-                    var array = [String]()
+                    var array = [UUID]()
                     let relKeyPathNode = relationshipNodes![key] as? NSMutableDictionary
                     // let serverValues = (value as? [Any]) != nil ? value as!  [Any] : []
                     let serverValues = value as! [Any]
@@ -358,10 +358,10 @@ class MPSPersistentStoreOperation: Operation
 
                         try updateObject(values: ri, fetchEntity: dst, objectID: nil, relationshipNodes: relKeyPathNode, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
                         //let serverID = webStore.delegate?.webStore(store: webStore, serverIDForItem: relatedItem, entityName: relEntity.destinationEntity!.name!)
-                        guard let identifierString = store.identifierForItem(relatedItem as! [String:Any], entityName: relEntity.destinationEntity!.name!) else {
+                        guard let identifier = store.identifierForItem(relatedItem as! [String:Any], entityName: relEntity.destinationEntity!.name!) else {
                             throw MIOPersistentStoreError.identifierIsNull()
                         }
-                        array.append(identifierString)
+                        array.append( identifier )
                     }
                     
                     parsedValues[key] = array

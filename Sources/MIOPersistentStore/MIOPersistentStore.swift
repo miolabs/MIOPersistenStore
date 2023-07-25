@@ -19,11 +19,11 @@ public protocol MIOPersistentStoreDelegate : NSObjectProtocol
 {
     //func store(_ store:MWSPersistentStore, requestForEntityName entityName:String, url:URL, bodyData:Data?, httpMethod:String) -> MWSRequest
     
-    func store(store:MIOPersistentStore, fetchRequest:NSFetchRequest<NSManagedObject>, serverID:String?) -> MPSRequest?
+    func store(store:MIOPersistentStore, fetchRequest:NSFetchRequest<NSManagedObject>, serverID:UUID?) -> MPSRequest?
     func store(store:MIOPersistentStore, saveRequest:NSSaveChangesRequest) -> MPSRequest?
     
     func store(store: MIOPersistentStore, identifierForObject object:NSManagedObject) -> UUID?
-    func store(store: MIOPersistentStore, identifierFromItem item:[String:Any], fetchEntityName: String) -> String?
+    func store(store: MIOPersistentStore, identifierFromItem item:[String:Any], fetchEntityName: String) -> UUID?
     func store(store: MIOPersistentStore, versionFromItem item:[String:Any], fetchEntityName: String) -> UInt64
     
     //
@@ -155,7 +155,7 @@ open class MIOPersistentStore: NSIncrementalStore
     
     public override func newValuesForObject(with objectID: NSManagedObjectID, with context: NSManagedObjectContext) throws -> NSIncrementalStoreNode {
         
-        let identifier = referenceObject(for: objectID) as! String
+        let identifier = UUID(uuidString: referenceObject(for: objectID) as! String )!
         let node = cacheNode(withIdentifier: identifier, entity: objectID.entity) ??
                    cacheNode(newNodeWithValues: [:], identifier: identifier, version: 0, entity: objectID.entity, objectID: objectID)
         
@@ -182,9 +182,9 @@ open class MIOPersistentStore: NSIncrementalStore
     
     public override func newValue(forRelationship relationship: NSRelationshipDescription, forObjectWith objectID: NSManagedObjectID, with context: NSManagedObjectContext?) throws -> Any {
         
-        let identifier = referenceObject(for: objectID) as! String
+        let identifier = UUID( uuidString: referenceObject(for: objectID) as! String )!
 
-        var node = cacheNode(withIdentifier: identifier, entity: objectID.entity)
+        var node = cacheNode( withIdentifier: identifier, entity: objectID.entity )
         if node == nil || node?.version == 0 {
 //            try checkForDerivated( node, objectID.entity.name!, identifier, context! )
             try fetchObject(With:identifier, entityName: objectID.entity.name!, context:context!)
@@ -192,14 +192,14 @@ open class MIOPersistentStore: NSIncrementalStore
             // try fetchObject(With:identifier, entityName: objectID.entity.name!, context:context!)
         }
         
-        let value = try node!.value(forRelationship: relationship)
+        let value = try node!.value( forRelationship: relationship )
         
         if relationship.isToMany == false {
-            guard let relIdentifier = value as? String else {
+            guard let relIdentifier = value as? UUID else {
                 return NSNull()
             }
             
-            var relNode = cacheNode(withIdentifier: relIdentifier, entity: relationship.destinationEntity!)
+            var relNode = cacheNode( withIdentifier: relIdentifier, entity: relationship.destinationEntity! )
             if relNode == nil {
                 // relNode = cacheNode(newNodeWithValues: [:],  identifier: relIdentifier, version: 0, entity:relationship.destinationEntity!, objectID: nil)
                  try fetchObject(With:relIdentifier, entityName: relationship.destinationEntity!.name!, context:context!)
@@ -208,7 +208,7 @@ open class MIOPersistentStore: NSIncrementalStore
             }
             
             if relNode == nil {
-                let delegate = (context!.persistentStoreCoordinator!.persistentStores[0] as! MIOPersistentStore ).delegate!
+                let delegate = ( context!.persistentStoreCoordinator!.persistentStores[0] as! MIOPersistentStore ).delegate!
                 print("FATAL: CD CACHE NODE NULL: \(delegate): \(objectID.entity.name!).\(relationship.name) -> \(relationship.destinationEntity!.name!)://\(relIdentifier)")
 //                Log.error( "FATAL: CD CACHE NODE NULL: \(delegate): \(objectID.entity.name!).\(relationship.name) -> \(relationship.destinationEntity!.name!)://\(relIdentifier)" )
                 return NSNull()
@@ -221,12 +221,12 @@ open class MIOPersistentStore: NSIncrementalStore
                 return (value as! Set<NSManagedObject>).map{ $0.objectID }
             }
             
-            guard let relIdentifiers = value as? [String] else {
-                return []
+            guard let relIdentifiers = value as? [UUID] else {
+                return [UUID]()
             }
             
             var objectIDs:Set<NSManagedObjectID> = Set()
-            var faultNodeIDs:[String] = []
+            var faultNodeIDs:[UUID] = []
             for relID in relIdentifiers {
                 let relNode = cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
                 if relNode == nil {
@@ -278,11 +278,8 @@ open class MIOPersistentStore: NSIncrementalStore
     public override func managedObjectContextDidUnregisterObjects(with objectIDs: [NSManagedObjectID]) {
         
         for objID in objectIDs {
-                        
-            
             guard let identifier = referenceObject(for: objID) as? String else { continue }
-            cacheNode(deleteNodeAtIdentifier: identifier, entity: objID.entity)
-            
+            cacheNode( deleteNodeAtIdentifier: UUID( uuidString: identifier )!, entity: objID.entity )
         }
     }
     
@@ -293,9 +290,9 @@ open class MIOPersistentStore: NSIncrementalStore
     let bundleIdentfier = Bundle.main.bundleIdentifier
     let cacheNodeQueue = DispatchQueue(label: "\(String(describing: Bundle.main.bundleIdentifier)).mws.cache-queue")
     
-    func cacheNode(withIdentifier identifier:String, entity:NSEntityDescription) -> MPSCacheNode? {
+    func cacheNode(withIdentifier identifier:UUID, entity:NSEntityDescription) -> MPSCacheNode? {
                         
-        let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier.uppercased(), entity: entity)
+        let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier, entity: entity)
         // --- print("CacheNode Query: \(referenceID)")
         var node:MPSCacheNode?
         cacheNodeQueue.sync {
@@ -304,12 +301,12 @@ open class MIOPersistentStore: NSIncrementalStore
         return node
     }
     
-    func cacheNode(newNodeWithValues values:[String:Any], identifier: String, version:UInt64, entity:NSEntityDescription, objectID:NSManagedObjectID?) -> MPSCacheNode {
+    func cacheNode(newNodeWithValues values:[String:Any], identifier: UUID, version:UInt64, entity:NSEntityDescription, objectID:NSManagedObjectID?) -> MPSCacheNode {
             
-        let id = identifier.uppercased()
-        let objID = objectID ?? newObjectID(for: entity, referenceObject: id)
+        let id = identifier
+        let objID = objectID ?? newObjectID( for: entity, referenceObject: id.uuidString.uppercased() )
         //let node = NSIncrementalStoreNode(objectID: objID, withValues: values, version: version)
-        let node = MPSCacheNode(identifier:id, entity: entity, withValues: values, version: version, objectID: objID)
+        let node = MPSCacheNode( identifier:id, entity: entity, withValues: values, version: version, objectID: objID )
         
         // --- NSLog("[CacheNode Insert: \(node.referenceID)")
         
@@ -321,13 +318,13 @@ open class MIOPersistentStore: NSIncrementalStore
         }
         
         if entity.superentity != nil {
-            cacheParentNode(node: node, identifier: identifier, entity: entity.superentity!)
+            cacheParentNode( node: node, identifier: identifier, entity: entity.superentity! )
         }
         
         return node
     }
     
-    func cacheParentNode(node: MPSCacheNode, identifier: String, entity:NSEntityDescription) {
+    func cacheParentNode(node: MPSCacheNode, identifier: UUID, entity:NSEntityDescription) {
                 
         let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier, entity: entity)
         
@@ -345,9 +342,9 @@ open class MIOPersistentStore: NSIncrementalStore
         }
     }
     
-    func cacheNode(updateNodeWithValues values:[String:Any], identifier:String, version:UInt64, entity:NSEntityDescription) {
+    func cacheNode(updateNodeWithValues values:[String:Any], identifier:UUID, version:UInt64, entity:NSEntityDescription) {
         
-        let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier.uppercased(), entity: entity)
+        let referenceID = MPSCacheNode.referenceID(withIdentifier: identifier, entity: entity)
         
 //        Log.verbose( "CacheNode Update: \(referenceID)" )
         
@@ -361,8 +358,8 @@ open class MIOPersistentStore: NSIncrementalStore
         }
     }
     
-    func cacheNode(deleteNodeAtIdentifier identifier:String, entity:NSEntityDescription) {
-        let id = identifier.uppercased()
+    func cacheNode(deleteNodeAtIdentifier identifier:UUID, entity:NSEntityDescription) {
+        let id = identifier
         let referenceID = MPSCacheNode.referenceID(withIdentifier: id, entity: entity)
 //        Log.verbose( "CacheNode Delete: \(referenceID)" )
         
@@ -379,8 +376,8 @@ open class MIOPersistentStore: NSIncrementalStore
         }
     }
     
-    func cacheNode(deletingNodeAtIdentifier identifier:String, entity:NSEntityDescription) -> Bool {
-        let id = identifier.uppercased()
+    func cacheNode(deletingNodeAtIdentifier identifier:UUID, entity:NSEntityDescription) -> Bool {
+        let id = identifier
         var deleting = false
         let referenceID = MPSCacheNode.referenceID(withIdentifier: id, entity: entity)
         cacheNodeQueue.sync {
@@ -407,7 +404,7 @@ open class MIOPersistentStore: NSIncrementalStore
     
     public func refresh(object: NSManagedObject, context: NSManagedObjectContext) throws {
         
-        let identifier = object.objectID._referenceObject as! String
+        let identifier = UUID(uuidString: object.objectID._referenceObject as! String )!
         let node = cacheNode(withIdentifier: identifier, entity: object.entity)
         if node != nil { node!.invalidate() }
         
@@ -417,7 +414,7 @@ open class MIOPersistentStore: NSIncrementalStore
     // MARK: - Fetching objects from server and cache
     
     var fetchingObjects = [String : Bool]()
-    @discardableResult func fetchObject(With serverID:String, entityName:String, context:NSManagedObjectContext) throws -> Any? {
+    @discardableResult func fetchObject(With serverID:UUID, entityName:String, context:NSManagedObjectContext) throws -> Any? {
         
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: entityName)
         fetchRequest.entity = persistentStoreCoordinator?.managedObjectModel.entitiesByName[entityName]
@@ -480,7 +477,7 @@ open class MIOPersistentStore: NSIncrementalStore
         //        }
     }
     
-    @discardableResult func fetchObjects(identifiers:[String], entityName:String, context:NSManagedObjectContext) throws -> Any? {
+    @discardableResult func fetchObjects(identifiers:[UUID], entityName:String, context:NSManagedObjectContext) throws -> Any? {
         let r = NSFetchRequest<NSManagedObject>(entityName: entityName)
         r.entity = persistentStoreCoordinator?.managedObjectModel.entitiesByName[entityName]
         r.predicate = MIOPredicateWithFormat(format: "identifier in \(identifiers)")
@@ -1140,7 +1137,7 @@ open class MIOPersistentStore: NSIncrementalStore
         return version
     }
     
-    func identifierForItem(_ values: [String:Any], entityName:String) -> String? {
+    func identifierForItem(_ values: [String:Any], entityName:String) -> UUID? {
         return delegate?.store(store: self, identifierFromItem: values, fetchEntityName: entityName)
     }
     
