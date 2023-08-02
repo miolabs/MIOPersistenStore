@@ -130,7 +130,7 @@ open class MIOPersistentStore: NSIncrementalStore
         }
         
         self.storeURL = storeURL
-        let metadata = [NSStoreUUIDKey: UUID().uuidString.uppercased(), NSStoreTypeKey: MIOPersistentStore.storeType]
+        let metadata = [NSStoreUUIDKey: storeURL.absoluteString, NSStoreTypeKey: MIOPersistentStore.storeType]
         self.metadata = metadata
     }
     
