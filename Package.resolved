@@ -14,8 +14,8 @@
         "package": "MIOCoreData",
         "repositoryURL": "https://github.com/miolabs/MIOCoreData.git",
         "state": {
-          "branch": "master",
-          "revision": "29243f43849c63290b80f2c69f708cc171df3243",
+          "branch": "swiftManager",
+          "revision": "e75b256ad0a39d811b2e0017d3865581d0004eb8",
           "version": null
         }
       }
