@@ -54,5 +54,5 @@ open class MPSFetchRequest : MPSRequest
         includeRelationships = fetchRequest.relationshipKeyPathsForPrefetching
         version = fetchRequest.version
         super.init()
-    }    
+    }
 }
