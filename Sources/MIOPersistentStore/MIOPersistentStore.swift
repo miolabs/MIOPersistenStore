@@ -139,6 +139,10 @@ open class MIOPersistentStore: NSIncrementalStore
                 throw MIOPersistentStoreError.identifierIsNull()
             }
             
+            if relNode!.version == 0 {
+                try fetchObject( withIdentifier:identifier, entityName: objectID.entity.name!, context:context! )
+            }
+            
             return relNode!.objectID
         }
         else {
@@ -153,9 +157,9 @@ open class MIOPersistentStore: NSIncrementalStore
             var objectIDs:Set<NSManagedObjectID> = Set()
             var faultNodeIDs:[UUID] = []
             for relID in relIdentifiers {
-                let relNode = try cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
-                if relNode == nil { faultNodeIDs.append(relID) }
-                else { objectIDs.insert(relNode!.objectID) }
+                let relNode = try cacheNode( withIdentifier: relID, entity: relationship.destinationEntity! )
+                if relNode == nil || relNode?.version == 0 { faultNodeIDs.append( relID ) }
+                else { objectIDs.insert( relNode!.objectID ) }
             }
             
             if faultNodeIDs.isEmpty == false {
