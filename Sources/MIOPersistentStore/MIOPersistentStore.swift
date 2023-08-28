@@ -28,6 +28,7 @@ public enum MIOPersistentStoreError : Error
     case identifierIsNull(_ schema:String = "", functionName: String = #function)
     case invalidValueType(_ schema:String = "", entityName:String, key:String, value:Any?, functionName: String = #function)
     case relationIdentifierNoExist(_ schema:String = "", entityName:String, relation:String, relationEntityName:String, id:String, functionName: String = #function)
+    case delegateIsNull(_ schema:String = "", functionName: String = #function )
 }
 
 extension MIOPersistentStoreError: LocalizedError {
@@ -43,6 +44,8 @@ extension MIOPersistentStoreError: LocalizedError {
             return "[MIOPersistentStoreError] \(schema) Invalid value type. \(entityName).\(key): \(value ?? "null"). \(functionName)"
         case let .relationIdentifierNoExist(schema, entityName, relation, relationEntityName, id, functionName):
             return "[MIOPersistentStoreError] \(schema) Relation identifier not exist. \(entityName).\(relation)): \(relationEntityName)://\(id). \(functionName)"
+        case let .delegateIsNull(schema, functionName):
+            return "[MIOPersistentStoreError] \(schema) Delegate is null. \(functionName)"
         }
     }
 }
@@ -332,12 +335,13 @@ open class MIOPersistentStore: NSIncrementalStore
     public func fetchObjects(fetchRequest:NSFetchRequest<NSManagedObject>, with context:NSManagedObjectContext) throws -> [Any] {
         
         if delegate == nil {
-            return []
+            throw MIOPersistentStoreError.delegateIsNull( storeURL!.absoluteString )
         }
         
         guard let request = delegate?.store(store: self, fetchRequest: fetchRequest, identifier: nil) else {
             throw MIOPersistentStoreError.invalidRequest()
         }
+        
         try request.execute()
         
         print("2.FETCH \(storeURL!): \(request.resultItems!)")
