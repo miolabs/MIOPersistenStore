@@ -328,6 +328,8 @@ open class MIOPersistentStore: NSIncrementalStore
         }
         try request.execute()
         
+        print("2.FETCH \(storeURL!): \(request.resultItems!)")
+        
         let object_ids = try updateObjects(items: request.resultItems!, for: fetchRequest.entity!, relationships: nil )
         
         switch fetchRequest.resultType {
