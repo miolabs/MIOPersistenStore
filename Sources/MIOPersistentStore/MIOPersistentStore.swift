@@ -140,8 +140,10 @@ open class MIOPersistentStore: NSIncrementalStore
             }
             
             if relNode!.version == 0 {
-                try fetchObject( withIdentifier:identifier, entityName: objectID.entity.name!, context:context! )
+                try fetchObject( withIdentifier:relIdentifier, entityName: relationship.destinationEntity!.name!, context:context! )
             }
+            
+            print("5.FETCH \(storeURL!): \(relationship.destinationEntity!.name!)://\(relIdentifier)/\(relNode!.version): \(relNode!._values)")
             
             return relNode!.objectID
         }
@@ -175,6 +177,8 @@ open class MIOPersistentStore: NSIncrementalStore
                     objectIDs.insert(relNode!.objectID)
                 }
             }
+            
+            print("6.FETCH \(storeURL!): \(relationship.destinationEntity!.name!) with \(relIdentifiers)")
             
             return Array( objectIDs )
         }
