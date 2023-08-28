@@ -100,7 +100,9 @@ open class MIOPersistentStore: NSIncrementalStore
         if node!.version == 0 {
             try fetchObject( withIdentifier:identifier, entityName: objectID.entity.name!, context:context )
         }
-                
+        
+        print("3.FETCH \(storeURL!): \(objectID.entity.name!)://\(identifier)/\(node!.version): \(node!._values)")
+        
         let storeNode = try node!.storeNode()
         return storeNode
     }
@@ -117,6 +119,8 @@ open class MIOPersistentStore: NSIncrementalStore
         if node!.version == 0 {
             try fetchObject( withIdentifier:identifier, entityName: objectID.entity.name!, context:context! )
         }
+        
+        print("4.FETCH \(storeURL!): \(objectID.entity.name!)://\(identifier)/\(node!.version): \(node!._values)")
         
         let value = try node!.value( forRelationship: relationship )
         
