@@ -104,8 +104,6 @@ open class MIOPersistentStore: NSIncrementalStore
             try fetchObject( withIdentifier:identifier, entityName: objectID.entity.name!, context:context )
         }
         
-        print("3.FETCH \(storeURL!): \(objectID.entity.name!)://\(identifier)/\(node!.version): \(node!._values)")
-        
         let storeNode = try node!.storeNode()
         return storeNode
     }
@@ -122,8 +120,6 @@ open class MIOPersistentStore: NSIncrementalStore
         if node!.version == 0 {
             try fetchObject( withIdentifier:identifier, entityName: objectID.entity.name!, context:context! )
         }
-        
-        print("4.FETCH \(storeURL!): \(objectID.entity.name!)://\(identifier)/\(node!.version): \(node!._values)")
         
         let value = try node!.value( forRelationship: relationship )
         
@@ -145,8 +141,6 @@ open class MIOPersistentStore: NSIncrementalStore
             if relNode!.version == 0 {
                 try fetchObject( withIdentifier:relIdentifier, entityName: relationship.destinationEntity!.name!, context:context! )
             }
-            
-            print("5.FETCH \(storeURL!): \(relationship.destinationEntity!.name!)://\(relIdentifier)/\(relNode!.version): \(relNode!._values)")
             
             return relNode!.objectID
         }
@@ -180,8 +174,6 @@ open class MIOPersistentStore: NSIncrementalStore
                     objectIDs.insert(relNode!.objectID)
                 }
             }
-            
-            print("6.FETCH \(storeURL!): \(relationship.destinationEntity!.name!) with \(relIdentifiers)")
             
             return Array( objectIDs )
         }
@@ -343,8 +335,6 @@ open class MIOPersistentStore: NSIncrementalStore
         }
         
         try request.execute()
-        
-        print("2.FETCH \(storeURL!): \(request.resultItems!)")
         
         let object_ids = try updateObjects(items: request.resultItems!, for: fetchRequest.entity!, relationships: nil )
         
