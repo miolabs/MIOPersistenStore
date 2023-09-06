@@ -7,12 +7,10 @@
 
 
 import Foundation
-
-#if APPLE_CORE_DATA
-import CoreData
-#else
 import MIOCore
 import MIOCoreData
+
+#if !APPLE_CORE_DATA
 public typealias NSPredicate = MIOPredicate
 public typealias NSSortDescriptor = MIOSortDescriptor
 #endif
