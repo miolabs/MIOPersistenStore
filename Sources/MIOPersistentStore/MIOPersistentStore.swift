@@ -330,13 +330,13 @@ open class MIOPersistentStore: NSIncrementalStore
             throw MIOPersistentStoreError.delegateIsNull( storeURL!.absoluteString )
         }
         
-        guard let request = delegate?.store(store: self, fetchRequest: fetchRequest, identifier: nil) else {
+        guard let request = delegate?.store(store: self, fetchRequest: fetchRequest, identifier: nil) as? MPSFetchRequest else {
             throw MIOPersistentStoreError.invalidRequest()
         }
         
         try request.execute()
         
-        let object_ids = try updateObjects(items: request.resultItems!, for: fetchRequest.entity!, relationships: nil )
+        let object_ids = try updateObjects(items: request.resultItems!, for: fetchRequest.entity!, relationships: request.includeRelationships )
         
         switch fetchRequest.resultType {
         case .managedObjectIDResultType: return object_ids.0
