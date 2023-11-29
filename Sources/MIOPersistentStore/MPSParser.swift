@@ -107,7 +107,7 @@ extension MIOPersistentStore
                     parsedValues[key] = try JSONSerialization.jsonObject( with: ( newValue as! String ).data( using: .utf8 )!, options: [ .allowFragments ] )
                 }
                 else if attr.attributeType == .decimalAttributeType {
-                    let decimal = MIOCoreDecimalValue( newValue, nil )
+                    let decimal = MCDecimalValue( newValue, nil )
                     parsedValues[key] = decimal != nil ? decimal! : NSNull()
                 }
                 else {
