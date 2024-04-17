@@ -77,7 +77,7 @@ open class MIOPersistentStore: NSIncrementalStore
     public override func execute(_ request: NSPersistentStoreRequest, with context: NSManagedObjectContext?) throws -> Any {
         
         switch request {
-        
+            
         case let fetchRequest as NSFetchRequest<NSManagedObject>:
             let obs = try fetchObjects(fetchRequest: fetchRequest, with: context!)
             return obs
@@ -90,11 +90,11 @@ open class MIOPersistentStore: NSIncrementalStore
             throw MIOPersistentStoreError.invalidRequest()
         }
     }
-            
+    
     public override func newValuesForObject(with objectID: NSManagedObjectID, with context: NSManagedObjectContext) throws -> NSIncrementalStoreNode {
         
         let identifier = UUID(uuidString: referenceObject(for: objectID) as! String )!
-
+        
         var node = try cacheNode( withIdentifier: identifier, entity: objectID.entity )
         if node == nil {
             node = try cacheNode(newNodeWithValues: [:], identifier: identifier, version: 0, entity: objectID.entity, objectID: objectID)
@@ -116,7 +116,7 @@ open class MIOPersistentStore: NSIncrementalStore
         if node == nil {
             node = try cacheNode(newNodeWithValues: [:], identifier: identifier, version: 0, entity: objectID.entity, objectID: objectID)
         }
-
+        
         if node!.version == 0 {
             try fetchObject( withIdentifier:identifier, entityName: objectID.entity.name!, context:context! )
         }
@@ -177,6 +177,32 @@ open class MIOPersistentStore: NSIncrementalStore
             
             return Array( objectIDs )
         }
+    }
+    
+    public func storedValues(forRelationship relationship: NSRelationshipDescription, forObjectWith objectID: NSManagedObjectID, with context: NSManagedObjectContext?) throws -> [Any]
+    {
+        let identifier = UUID( uuidString: referenceObject(for: objectID) as! String )!
+        
+        var node = try cacheNode( withIdentifier: identifier, entity: objectID.entity )
+        if node == nil {
+            node = try cacheNode(newNodeWithValues: [:], identifier: identifier, version: 0, entity: objectID.entity, objectID: objectID)
+        }
+        
+        if node!.version == 0 {
+            try fetchObject( withIdentifier:identifier, entityName: objectID.entity.name!, context:context! )
+        }
+        
+        let value = try node!.value( forRelationship: relationship )
+
+        if let set = value as? Set<NSManagedObject> {
+            return set.map{ $0 }
+        }
+        
+        if let uuids = value as? [UUID] {
+            return uuids
+        }
+
+        return []
     }
     
     public override func obtainPermanentIDs(for array: [NSManagedObject]) throws -> [NSManagedObjectID] {
