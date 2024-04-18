@@ -181,7 +181,9 @@ open class MIOPersistentStore: NSIncrementalStore
     
     public func storedValues(forRelationship relationship: NSRelationshipDescription, forObjectWith objectID: NSManagedObjectID, with context: NSManagedObjectContext?) throws -> [Any]
     {
-        let identifier = UUID( uuidString: referenceObject(for: objectID) as! String )!
+        if objectID.isTemporaryID { return [] }
+        
+        let identifier = UUID( uuidString: referenceObject(for: objectID) as! String )!                
         
         var node = try cacheNode( withIdentifier: identifier, entity: objectID.entity )
         if node == nil {
