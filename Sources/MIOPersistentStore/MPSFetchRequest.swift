@@ -32,9 +32,9 @@ open class MPSFetchRequest : MPSRequest
     open var changeValues: [String:Any?]?
     
     // The read tablename in the DB
-    open var tableName: String {
-        return ( try? entity.baseEntity().to_db_table_name() ) ?? entity.name!
-    }
+//    open var tableName: String {
+//        return ( try? entity.baseEntity().to_db_table_name() ) ?? entity.name!
+//    }
     
     public init( entity:NSEntityDescription ){
         self.entity = entity
