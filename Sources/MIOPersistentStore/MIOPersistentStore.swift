@@ -134,7 +134,9 @@ open class MIOPersistentStore: NSIncrementalStore
             
             if relNode == nil {
                 let delegate = ( context!.persistentStoreCoordinator!.persistentStores[0] as! MIOPersistentStore ).delegate!
+                print( "************ FATAL ERROR" )
                 print("FATAL: CD CACHE NODE NULL: \(delegate): \(objectID.entity.name!).\(relationship.name) -> \(relationship.destinationEntity!.name!)://\(relIdentifier)")
+                print( "************ FATAL ERROR" )
                 throw MIOPersistentStoreError.identifierIsNull()
             }
             
@@ -167,7 +169,9 @@ open class MIOPersistentStore: NSIncrementalStore
                     let relNode = try cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
                     if relNode == nil {
                         let delegate = (context!.persistentStoreCoordinator!.persistentStores[0] as! MIOPersistentStore ).delegate!
+                        print("************ FATAL ERROR" )
                         print ("FATAL: CD CACHE NODE NULL: \(delegate): \(objectID.entity.name!).\(relationship.name) -> \(relationship.destinationEntity!.name!)://\(relID)")
+                        print("************ FATAL ERROR" )
                         throw MIOPersistentStoreError.identifierIsNull()
                     }
                     
