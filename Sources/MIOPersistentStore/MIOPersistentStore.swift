@@ -118,6 +118,8 @@ open class MIOPersistentStore: NSIncrementalStore
         }
         
         if node!.version == 0 {
+            let delegate = ( context!.persistentStoreCoordinator!.persistentStores[0] as! MIOPersistentStore ).delegate!
+            print("\(delegate): newValue -> fetchObject: \(objectID.entity.name!).\(relationship.name) -> \(relationship.destinationEntity!.name!)://\(identifier)")
             try fetchObject( withIdentifier:identifier, entityName: objectID.entity.name!, context:context! )
         }
         
