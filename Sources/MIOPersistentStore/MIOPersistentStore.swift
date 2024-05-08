@@ -130,6 +130,8 @@ open class MIOPersistentStore: NSIncrementalStore
             
             var relNode = try cacheNode( withIdentifier: relIdentifier, entity: relationship.destinationEntity! )
             if relNode == nil {
+                let delegate = ( context!.persistentStoreCoordinator!.persistentStores[0] as! MIOPersistentStore ).delegate!
+                print("\(delegate): newValue -> fetchObject: \(objectID.entity.name!).\(relationship.name) -> \(relationship.destinationEntity!.name!)://\(identifier)")
                 try fetchObject( withIdentifier:relIdentifier, entityName: relationship.destinationEntity!.name!, context:context! )
                 relNode = try cacheNode(withIdentifier: relIdentifier, entity: relationship.destinationEntity!)
             }
