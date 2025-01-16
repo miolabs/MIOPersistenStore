@@ -45,10 +45,10 @@ open class MPSCacheNode : NSObject
         
         func reference(from value:Any) -> Any {
             if let objID = value as? NSManagedObjectID {
-                return objID._referenceObject
+                return objID.referenceID
             }
             else if let obj = value as? NSManagedObject {
-                return obj.objectID._referenceObject
+                return obj.objectID.referenceID
             }
             else if let id = value as? String {
                 return UUID(uuidString: id ) ?? NSNull()
@@ -117,6 +117,7 @@ open class MPSCacheNode : NSObject
         _attributeValues = [:]
         for (key, _) in _entity.attributesByName {
             if let value = _values[key] {
+                if value is NSNull { continue }
                 _attributeValues![key] = value
             }
         }

@@ -53,8 +53,13 @@ extension MIOPersistentStoreError: LocalizedError {
 
 open class MIOPersistentStore: NSIncrementalStore
 {
-    //public static var storeType: String { return String(describing: MIOPersistentStore.self) }
-    public static var storeType: String { return "MIOPersistentStore" }
+    public static let storeType:String = "MIOPersistentStore"
+    public static let storeDescription: NSPersistentStoreDescription = {
+        let description = NSPersistentStoreDescription()
+        description.type = MIOPersistentStore.storeType
+        return description
+    }()
+    
     public override var type: String { return MIOPersistentStore.storeType }
     
     public var delegate: MIOPersistentStoreDelegate?
@@ -339,7 +344,7 @@ open class MIOPersistentStore: NSIncrementalStore
         
     public func refresh(object: NSManagedObject, context: NSManagedObjectContext) throws {
         
-        let identifier = UUID(uuidString: object.objectID._referenceObject as! String )!
+        let identifier = UUID(uuidString: object.objectID.referenceID)!
         let node = try cacheNode(withIdentifier: identifier, entity: object.entity)
         if node != nil { node!.invalidate() }
         
@@ -376,7 +381,18 @@ open class MIOPersistentStore: NSIncrementalStore
         
         switch fetchRequest.resultType {
         case .managedObjectIDResultType: return object_ids.0
-        case .managedObjectResultType  : return try object_ids.0.map{ try context.existingObject(with: $0) }
+        case .managedObjectResultType  :
+            var objs:[NSManagedObject] = []
+            for obj_id in object_ids.0 {
+                do {
+                    let o = try context.existingObject( with: obj_id )
+                    objs.append( o )
+                } catch {
+                    print ("\(error)")
+                }
+            }
+            return objs
+            //return try object_ids.0.map { try context.existingObject(with: $0) }
         default: return []
         }
     }

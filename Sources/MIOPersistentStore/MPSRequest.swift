@@ -6,13 +6,8 @@
 //
 
 import Foundation
-
-#if APPLE_CORE_DATA
-import CoreData
-#else
 import MIOCore
 import MIOCoreData
-#endif
 
 
 //#else

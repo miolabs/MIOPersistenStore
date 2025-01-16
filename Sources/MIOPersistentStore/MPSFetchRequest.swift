@@ -10,15 +10,8 @@ import Foundation
 import MIOCore
 import MIOCoreData
 
-#if !APPLE_CORE_DATA
-public typealias NSPredicate = MIOPredicate
-public typealias NSSortDescriptor = MIOSortDescriptor
-#endif
-
-
 open class MPSFetchRequest : MPSRequest
-{
-    
+{    
     open var entityName:String
     open var entityID:String?
     open var entity:NSEntityDescription
@@ -42,7 +35,8 @@ open class MPSFetchRequest : MPSRequest
         super.init()
     }
             
-    public init( fetchRequest:NSFetchRequest<NSManagedObject> ) {
+    public init( fetchRequest:NSFetchRequest<NSManagedObject> )
+    {
         entity = fetchRequest.entity!
         entityName = entity.name!
         predicate = fetchRequest.predicate
@@ -50,7 +44,9 @@ open class MPSFetchRequest : MPSRequest
         limit  = MIOCoreInt32Value( fetchRequest.fetchLimit  )
         offset = MIOCoreInt32Value( fetchRequest.fetchOffset )
         includeRelationships = fetchRequest.relationshipKeyPathsForPrefetching
+        #if APPLE_CORE_DATA
         version = fetchRequest.version
+        #endif
         super.init()
     }
 }
