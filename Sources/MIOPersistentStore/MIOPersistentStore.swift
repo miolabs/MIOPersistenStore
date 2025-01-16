@@ -98,7 +98,7 @@ open class MIOPersistentStore: NSIncrementalStore
     
     public override func newValuesForObject(with objectID: NSManagedObjectID, with context: NSManagedObjectContext) throws -> NSIncrementalStoreNode {
         
-        let identifier = UUID(uuidString: referenceObject(for: objectID) as! String )!
+        let identifier = referenceObject(for: objectID) as! UUID
         
         var node = try cacheNode( withIdentifier: identifier, entity: objectID.entity )
         if node == nil {
@@ -115,7 +115,7 @@ open class MIOPersistentStore: NSIncrementalStore
     
     public override func newValue(forRelationship relationship: NSRelationshipDescription, forObjectWith objectID: NSManagedObjectID, with context: NSManagedObjectContext?) throws -> Any {
         
-        let identifier = UUID( uuidString: referenceObject(for: objectID) as! String )!
+        let identifier = referenceObject(for: objectID) as! UUID
         
         var node = try cacheNode( withIdentifier: identifier, entity: objectID.entity )
         if node == nil {
