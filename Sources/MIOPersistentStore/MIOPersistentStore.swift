@@ -272,7 +272,7 @@ open class MIOPersistentStore: NSIncrementalStore
     func cacheNode(newNodeWithValues values:[String:Any], identifier: UUID, version:UInt64, entity:NSEntityDescription, objectID:NSManagedObjectID?) throws -> MPSCacheNode {
             
         let id = identifier
-        let objID = objectID ?? newObjectID( for: entity, referenceObject: id.uuidString.uppercased() )
+        let objID = objectID ?? newObjectID( for: entity, referenceObject: id )
         let node = MPSCacheNode( identifier:id, entity: entity, withValues: values, version: version, objectID: objID )
                                
         try cacheNodeQueue().sync {
@@ -343,8 +343,8 @@ open class MIOPersistentStore: NSIncrementalStore
     }
         
     public func refresh(object: NSManagedObject, context: NSManagedObjectContext) throws {
-        
-        let identifier = UUID(uuidString: object.objectID.referenceID)!
+                        
+        let identifier = referenceObject(for: object.objectID) as! UUID
         let node = try cacheNode(withIdentifier: identifier, entity: object.entity)
         if node != nil { node!.invalidate() }
         

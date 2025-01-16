@@ -45,10 +45,10 @@ open class MPSCacheNode : NSObject
         
         func reference(from value:Any) -> Any {
             if let objID = value as? NSManagedObjectID {
-                return objID.referenceID
+                return reference(from: objID )
             }
             else if let obj = value as? NSManagedObject {
-                return obj.objectID.referenceID
+                return reference(from: obj.objectID )
             }
             else if let id = value as? String {
                 return UUID(uuidString: id ) ?? NSNull()
