@@ -98,7 +98,7 @@ open class MIOPersistentStore: NSIncrementalStore
     
     public override func newValuesForObject(with objectID: NSManagedObjectID, with context: NSManagedObjectContext) throws -> NSIncrementalStoreNode {
         
-        let identifier = referenceObject(for: objectID) as! UUID
+        let identifier = referenceObject( for: objectID ) as! UUID
         
         var node = try cacheNode( withIdentifier: identifier, entity: objectID.entity )
         if node == nil {
@@ -196,7 +196,7 @@ open class MIOPersistentStore: NSIncrementalStore
     {
         if objectID.isTemporaryID { return [] }
         
-        let identifier = UUID( uuidString: referenceObject(for: objectID) as! String )!                
+        let identifier = referenceObject(for: objectID) as! UUID
         
         var node = try cacheNode( withIdentifier: identifier, entity: objectID.entity )
         if node == nil {
@@ -226,21 +226,24 @@ open class MIOPersistentStore: NSIncrementalStore
                 throw MIOPersistentStoreError.identifierIsNull()
             }
             
-            let objID = newObjectID( for: obj.entity, referenceObject: identifier.uuidString.uppercased() )
+            let objID = newObjectID( for: obj.entity, referenceObject: identifier )
             
             return objID
         }
     }
     
     public override func managedObjectContextDidRegisterObjects(with objectIDs: [NSManagedObjectID]) {
-        
+        for objID in objectIDs {
+            if objID.isTemporaryID == false { continue }
+            guard let identifier = referenceObject(for: objID) as? UUID else { continue }
+            _ = try? cacheNode(newNodeWithValues: [:], identifier: identifier, version: 0, entity: objID.entity, objectID: objID)
+        }
     }
     
     public override func managedObjectContextDidUnregisterObjects(with objectIDs: [NSManagedObjectID]) {
-        
         for objID in objectIDs {
-            guard let identifier = referenceObject(for: objID) as? String else { continue }
-            try? cacheNode( deleteNodeAtIdentifier: UUID( uuidString: identifier )!, entity: objID.entity )
+            guard let identifier = referenceObject(for: objID) as? UUID else { continue }
+            try? cacheNode( deleteNodeAtIdentifier: identifier, entity: objID.entity )
         }
     }
     

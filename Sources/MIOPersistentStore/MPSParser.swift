@@ -16,7 +16,7 @@ extension MIOPersistentStore
     
     func updateObjects(items:[Any], for entity:NSEntityDescription, relationships:[String]?) throws -> ([NSManagedObjectID], [NSManagedObjectID], [NSManagedObjectID]) {
         
-        let objects = NSMutableSet()
+        var objects:[NSManagedObjectID] = []
         let insertedObjects = NSMutableSet()
         let updatedObjects = NSMutableSet()
         let relationshipNodes = NSMutableDictionary()
@@ -24,13 +24,13 @@ extension MIOPersistentStore
         
         for i in items {
             let values = i as! [String : Any]
-            try updateObject(values:values, fetchEntity:entity, objectID:nil, relationshipNodes: relationshipNodes, objectIDs:objects, insertedObjectIDs:insertedObjects, updatedObjectIDs:updatedObjects)
+            try updateObject(values:values, fetchEntity:entity, objectID:nil, relationshipNodes: relationshipNodes, objectIDs:&objects, insertedObjectIDs:insertedObjects, updatedObjectIDs:updatedObjects)
         }
         
-        return (objects.allObjects as! [NSManagedObjectID], insertedObjects.allObjects as! [NSManagedObjectID], updatedObjects.allObjects as! [NSManagedObjectID])
+        return (objects, insertedObjects.allObjects as! [NSManagedObjectID], updatedObjects.allObjects as! [NSManagedObjectID])
     }
 
-    func updateObject(values:[String:Any], fetchEntity:NSEntityDescription, objectID:NSManagedObjectID?, relationshipNodes:NSMutableDictionary?, objectIDs:NSMutableSet, insertedObjectIDs:NSMutableSet, updatedObjectIDs:NSMutableSet) throws {
+    func updateObject(values:[String:Any], fetchEntity:NSEntityDescription, objectID:NSManagedObjectID?, relationshipNodes:NSMutableDictionary?, objectIDs:inout [NSManagedObjectID], insertedObjectIDs:NSMutableSet, updatedObjectIDs:NSMutableSet) throws {
         
         var entity = fetchEntity
         let entityValues: [String:Any] = values
@@ -40,7 +40,7 @@ extension MIOPersistentStore
         }
             
         // Check the objects inside values
-        let parsedValues = try checkRelationships( values:entityValues, entity: entity, relationshipNodes: relationshipNodes, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs )
+        let parsedValues = try checkRelationships( values:entityValues, entity: entity, relationshipNodes: relationshipNodes, objectIDs: &objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs )
         
         guard let identifier = identifierForItem( parsedValues, entityName: fetchEntity.name! ) else {
             throw MIOPersistentStoreError.identifierIsNull()
@@ -65,10 +65,10 @@ extension MIOPersistentStore
             updatedObjectIDs.add( node!.objectID )
         }
         
-        objectIDs.add( node!.objectID )
+        objectIDs.append( node!.objectID )
     }
 
-    func checkRelationships(values : [String : Any], entity:NSEntityDescription, relationshipNodes : NSMutableDictionary?, objectIDs:NSMutableSet, insertedObjectIDs:NSMutableSet, updatedObjectIDs:NSMutableSet) throws -> [String : Any] {
+    func checkRelationships(values : [String : Any], entity:NSEntityDescription, relationshipNodes : NSMutableDictionary?, objectIDs:inout [NSManagedObjectID], insertedObjectIDs:NSMutableSet, updatedObjectIDs:NSMutableSet) throws -> [String : Any] {
         
         var parsedValues: [ String: Any ] = [ "classname": values[ "classname" ] as! String ]
         
@@ -152,7 +152,7 @@ extension MIOPersistentStore
                 if relEntity.isToMany == false {
                     let relKeyPathNode = relationshipNodes![key] as? NSMutableDictionary
                     if let serverValues = value as? [String:Any] {
-                        try updateObject(values: serverValues, fetchEntity: relEntity.destinationEntity!, objectID: nil, relationshipNodes: relKeyPathNode, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
+                        try updateObject(values: serverValues, fetchEntity: relEntity.destinationEntity!, objectID: nil, relationshipNodes: relKeyPathNode, objectIDs: &objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
                         //let serverID = webStore.delegate?.webStore(store: webStore, serverIDForItem: value!, entityName: relEntity.destinationEntity!.name!)
                         guard let identifierString = identifierForItem(value as! [String:Any], entityName: relEntity.destinationEntity!.name!) else {
                             throw MIOPersistentStoreError.identifierIsNull()
@@ -178,7 +178,7 @@ extension MIOPersistentStore
                             throw MIOPersistentStoreError.invalidValueType( entityName: relEntity.name, key: serverKey, value: relEntity.destinationEntity?.name ?? "relEntity.destinationEntity is nil" )
                         }
 
-                        try updateObject(values: ri, fetchEntity: dst, objectID: nil, relationshipNodes: relKeyPathNode, objectIDs: objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
+                        try updateObject(values: ri, fetchEntity: dst, objectID: nil, relationshipNodes: relKeyPathNode, objectIDs: &objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
                         //let serverID = webStore.delegate?.webStore(store: webStore, serverIDForItem: relatedItem, entityName: relEntity.destinationEntity!.name!)
                         guard let identifier = identifierForItem(relatedItem as! [String:Any], entityName: relEntity.destinationEntity!.name!) else {
                             throw MIOPersistentStoreError.identifierIsNull()
