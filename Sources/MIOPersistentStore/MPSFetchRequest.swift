@@ -5,8 +5,6 @@
 //  Created by Javier Segura Perez on 18/7/22.
 //
 
-
-import Foundation
 import MIOCore
 import MIOCoreData
 
@@ -24,11 +22,6 @@ open class MPSFetchRequest : MPSRequest
     
     open var changeValues: [String:Any?]?
     
-    // The read tablename in the DB
-//    open var tableName: String {
-//        return ( try? entity.baseEntity().to_db_table_name() ) ?? entity.name!
-//    }
-    
     public init( entity:NSEntityDescription ){
         self.entity = entity
         self.entityName = entity.name!
@@ -44,7 +37,7 @@ open class MPSFetchRequest : MPSRequest
         limit  = MIOCoreInt32Value( fetchRequest.fetchLimit  )
         offset = MIOCoreInt32Value( fetchRequest.fetchOffset )
         includeRelationships = fetchRequest.relationshipKeyPathsForPrefetching
-        #if APPLE_CORE_DATA
+        #if !APPLE_CORE_DATA
         version = fetchRequest.version
         #endif
         super.init()
