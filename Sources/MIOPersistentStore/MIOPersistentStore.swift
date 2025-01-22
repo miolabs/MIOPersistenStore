@@ -387,11 +387,20 @@ open class MIOPersistentStore: NSIncrementalStore
         case .managedObjectResultType  :
             var objs:[NSManagedObject] = []
             for obj_id in object_ids.0 {
-                do {
-                    let o = try context.existingObject( with: obj_id )
-                    objs.append( o )
-                } catch {
-                    print ("\(error)")
+                // Look for entity or parent entity
+                var check:NSEntityDescription? = obj_id.entity
+                while check != nil {
+                    if check!.name == fetchRequest.entityName {
+                        do {
+                            let o = try context.existingObject( with: obj_id )
+                            objs.append( o )
+                        }
+                        catch {
+                            print ("\(error)")
+                        }
+                        break
+                    }
+                    check = check?.superentity
                 }
             }
             return objs

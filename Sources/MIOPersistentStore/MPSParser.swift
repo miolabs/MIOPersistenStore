@@ -64,8 +64,15 @@ extension MIOPersistentStore
             try cacheNode( updateNodeWithValues: parsedValues, identifier: identifier, version: version, entity: entity )
             updatedObjectIDs.add( node!.objectID )
         }
-        
+
         objectIDs.append( node!.objectID )
+        
+        // Look for parent entity
+//        var check:NSEntityDescription? = entity
+//        while check != nil {
+//            if check!.name == entity.name { objectIDs.append( node!.objectID ); break }
+//            check = check?.superentity
+//        }
     }
 
     func checkRelationships(values : [String : Any], entity:NSEntityDescription, relationshipNodes : NSMutableDictionary?, objectIDs:inout [NSManagedObjectID], insertedObjectIDs:NSMutableSet, updatedObjectIDs:NSMutableSet) throws -> [String : Any] {
