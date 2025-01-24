@@ -106,6 +106,7 @@ open class MIOPersistentStore: NSIncrementalStore
         }
         
         if node!.version == 0 {
+            print( "MIOPersistenStore:newValuesForObject:with:with: fetchObject \(objectID.entity.name!) \(identifier)" )
             try fetchObject( withIdentifier:identifier, entityName: objectID.entity.name!, context:context )
         }
         
@@ -125,6 +126,7 @@ open class MIOPersistentStore: NSIncrementalStore
         if node!.version == 0 {
             //let delegate = ( context!.persistentStoreCoordinator!.persistentStores[0] as! MIOPersistentStore ).delegate!
             //print("\(delegate): newValue -> fetchObject: \(objectID.entity.name!).\(relationship.name) -> \(relationship.destinationEntity!.name!)://\(identifier)")
+            print( "MIOPersistenStore:newValue:forRelationship:forObjectWith:with: fetchObject \(objectID.entity.name!) \(identifier)" )
             try fetchObject( withIdentifier:identifier, entityName: objectID.entity.name!, context:context! )
         }
         
@@ -137,6 +139,7 @@ open class MIOPersistentStore: NSIncrementalStore
             if relNode == nil {
                 //let delegate = ( context!.persistentStoreCoordinator!.persistentStores[0] as! MIOPersistentStore ).delegate!
                 //print("\(delegate): newValue -> fetchObject: \(objectID.entity.name!).\(relationship.name) -> \(relationship.destinationEntity!.name!)://\(identifier)")
+                print( "MIOPersistenStore:newValue:forRelationship:forObjectWith:with: fetchObject \(relationship.destinationEntity!.name!) \(relIdentifier)" )
                 try fetchObject( withIdentifier:relIdentifier, entityName: relationship.destinationEntity!.name!, context:context! )
                 relNode = try cacheNode(withIdentifier: relIdentifier, entity: relationship.destinationEntity!)
             }
@@ -150,6 +153,7 @@ open class MIOPersistentStore: NSIncrementalStore
             }
             
             if relNode!.version == 0 {
+                print( "MIOPersistenStore:newValue:forRelationship:forObjectWith:with: fetchObject \(relationship.destinationEntity!.name!) \(relIdentifier)" )
                 try fetchObject( withIdentifier:relIdentifier, entityName: relationship.destinationEntity!.name!, context:context! )
             }
             
@@ -173,6 +177,7 @@ open class MIOPersistentStore: NSIncrementalStore
             }
             
             if faultNodeIDs.isEmpty == false {
+                print( "MIOPersistenStore:newValue:forRelationship:forObjectWith:with: fetchObject \(relationship.destinationEntity!.name!) \(faultNodeIDs)" )
                 try fetchObjects(identifiers: faultNodeIDs, entityName: relationship.destinationEntity!.name!, context: context!)
                 for relID in faultNodeIDs {
                     let relNode = try cacheNode(withIdentifier: relID, entity: relationship.destinationEntity!)
@@ -380,31 +385,14 @@ open class MIOPersistentStore: NSIncrementalStore
         
         try request.execute()
         
-        let object_ids = try updateObjects(items: request.resultItems!, for: fetchRequest.entity!, relationships: request.includeRelationships )
+        let entities = request.resultItems!["entities"] as! [Any]
+        let related_entities = request.resultItems!["relationShipEntities"] as! [Any]
+        let object_ids = try updateObjects(items: entities, for: fetchRequest.entity!, relationships: request.includeRelationships )
+        _ = try updateObjects(items: related_entities, for: fetchRequest.entity!, relationships: request.includeRelationships )
         
         switch fetchRequest.resultType {
         case .managedObjectIDResultType: return object_ids.0
-        case .managedObjectResultType  :
-            var objs:[NSManagedObject] = []
-            for obj_id in object_ids.0 {
-                // Look for entity or parent entity
-                var check:NSEntityDescription? = obj_id.entity
-                while check != nil {
-                    if check!.name == fetchRequest.entityName {
-                        do {
-                            let o = try context.existingObject( with: obj_id )
-                            objs.append( o )
-                        }
-                        catch {
-                            print ("\(error)")
-                        }
-                        break
-                    }
-                    check = check?.superentity
-                }
-            }
-            return objs
-            //return try object_ids.0.map { try context.existingObject(with: $0) }
+        case .managedObjectResultType  : return try object_ids.0.map { try context.existingObject(with: $0) }
         default: return []
         }
     }

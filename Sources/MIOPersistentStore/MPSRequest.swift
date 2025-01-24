@@ -17,7 +17,6 @@ import MIOCoreData
 
 open class MPSRequest
 {    
-    open var resultItems:[Any]?
-                        
+    open var resultItems:[String:Any]?
     open func execute() throws {}
 }

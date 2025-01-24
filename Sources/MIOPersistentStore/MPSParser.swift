@@ -79,123 +79,97 @@ extension MIOPersistentStore
         
         var parsedValues: [ String: Any ] = [ "classname": values[ "classname" ] as! String ]
         
-        for key in entity.propertiesByName.keys {
+        for (key, prop) in entity.propertiesByName
+        {
+            // TODO: Transfrom key from UserInfo
+            let serverKey = key
+            let value = values[serverKey]
+            if value == nil || value is NSNull { continue }
             
-            let prop = entity.propertiesByName[key]
-            if prop is NSAttributeDescription {
-                                         
-                // TODO: Transfrom key from UserInfo
-                let serverKey = key
-                
-                let newValue = values[serverKey]
-                if newValue == nil { continue }
-                
-                if newValue is NSNull {
-                    parsedValues[key] = newValue
-                    continue
-                }
-                                
-                let attr = prop as! NSAttributeDescription
-                if attr.attributeType == .dateAttributeType {
-                    if let date = newValue as? Date {
-                        parsedValues[key] = date
+            if let attr = prop as? NSAttributeDescription
+            {
+                func check_type_and_not_null_value( _ value: Any?, block: @escaping (Any) throws -> Any? ) throws -> Any {
+                    if value == nil {
+                        throw MIOPersistentStoreError.invalidValueType(entityName:entity.name!, key: key, value: value)
                     }
-                    else if let dateString = newValue as? String {
-                        parsedValues[key] = try parse_date( dateString )
-                    }
-                    else {
-                        throw MIOPersistentStoreError.invalidValueType(entityName:entity.name!, key: key, value: newValue!)
-                    }
-                }
-                else if attr.attributeType == .UUIDAttributeType {
-                    parsedValues[key] = newValue is String ? UUID(uuidString: newValue as! String ) : newValue  // (newValue as! UUID).uuidString.upperCased( )
-                }
-                else if attr.attributeType == .transformableAttributeType {
-                    parsedValues[key] = try JSONSerialization.jsonObject( with: ( newValue as! String ).data( using: .utf8 )!, options: [ .allowFragments ] )
-                }
-                else if attr.attributeType == .decimalAttributeType {
-                    let decimal = MCDecimalValue( newValue, nil )
-                    parsedValues[key] = decimal != nil ? decimal! : NSNull()
-                }
-                else {
-                    // check type
-                    switch attr.attributeType {
-                    case .booleanAttributeType,
-                         .decimalAttributeType,
-                         .doubleAttributeType,
-                         .floatAttributeType,
-                         .integer16AttributeType,
-                         .integer32AttributeType,
-                         .integer64AttributeType:
-                        if !(newValue is NSNumber) {
-                            throw MIOPersistentStoreError.invalidValueType( entityName: entity.name!, key: key, value: newValue )
-                        }
-                        
-                    case .stringAttributeType:
-                        if !(newValue is NSString) {
-                            throw MIOPersistentStoreError.invalidValueType( entityName: entity.name!, key: key, value: newValue )
-                        }
                     
-                    default:
-                        throw MIOPersistentStoreError.invalidValueType( entityName: entity.name!, key: key, value: newValue )
+                    guard let v = try block( value! ) else {
+                        throw MIOPersistentStoreError.invalidValueType(entityName:entity.name!, key: key, value: value)
                     }
-                    parsedValues[key] = newValue
+                    return v
+                }
+                
+                switch attr.attributeType {
+                case .dateAttributeType:
+                    if let date = value as? Date { parsedValues[key] = date; continue }
+                    parsedValues[key] = try check_type_and_not_null_value( value as? String ) { try parse_date( $0 as! String ) }
+                
+                case .UUIDAttributeType:
+                    if let uuid = value as? UUID { parsedValues[key] = uuid; continue }
+                    parsedValues[key] = try check_type_and_not_null_value( value as? String ) { UUID(uuidString: $0 as! String ) }
+                
+                case .transformableAttributeType:
+                    if let dict = value as? [String:Any] { parsedValues[key] = dict; continue }
+                    parsedValues[key] = try check_type_and_not_null_value( value as? String) {
+                        try JSONSerialization.jsonObject( with: ( $0 as! String ).data( using: .utf8 )!, options: [ .allowFragments ] )
+                    }
+                
+                case .booleanAttributeType,
+                     .decimalAttributeType,
+                     .doubleAttributeType,
+                     .floatAttributeType,
+                     .integer16AttributeType,
+                     .integer32AttributeType,
+                     .integer64AttributeType:
+
+                    if let number = value as? NSNumber { parsedValues[key] = number; continue }
+                    switch attr.attributeType {
+                    case .booleanAttributeType: parsedValues[key] = try check_type_and_not_null_value( value ) { MIOCoreBoolValue( $0 ) }
+                    case .decimalAttributeType: parsedValues[key] = try check_type_and_not_null_value( value ) { MCDecimalValue( $0 ) }
+                    case .doubleAttributeType: parsedValues[key] = try check_type_and_not_null_value( value ) { MIOCoreFloatValue( $0 ) }
+                    case .floatAttributeType: parsedValues[key] = try check_type_and_not_null_value( value ) { MIOCoreFloatValue( $0 ) }
+                    case .integer16AttributeType: parsedValues[key] = try check_type_and_not_null_value( value ) { MIOCoreInt16Value( $0 ) }
+                    case .integer32AttributeType: parsedValues[key] = try check_type_and_not_null_value( value ) { MIOCoreInt32Value( $0 ) }
+                    case .integer64AttributeType: parsedValues[key] = try check_type_and_not_null_value( value ) { MIOCoreInt64Value( $0 ) }
+                    default: break
+                    }
+                    
+                case .stringAttributeType:
+                    if let str = value as? String { parsedValues[key] = str; continue }
+                    if let str = value as? NSString { parsedValues[key] = str; continue }
+                    throw MIOPersistentStoreError.invalidValueType( entityName: entity.name!, key: key, value: value )
+                    
+                default: throw MIOPersistentStoreError.invalidValueType( entityName: entity.name!, key: key, value: value )
                 }
             }
-            else if prop is NSRelationshipDescription {
-                
-                //let serverKey = (webStore.delegate?.webStore(store: webStore, serverRelationshipName: key, forEntity: entity))!
-                let serverKey = key
-                
-                if relationshipNodes?[key] == nil {
-                    parsedValues[key] = values[serverKey]
-                    continue
-                }
-                
-                let relEntity = entity.relationshipsByName[key]!
-                let value = values[serverKey]
-                if value == nil { continue }
-                
-                if relEntity.isToMany == false {
-                    let relKeyPathNode = relationshipNodes![key] as? NSMutableDictionary
-                    if let serverValues = value as? [String:Any] {
-                        try updateObject(values: serverValues, fetchEntity: relEntity.destinationEntity!, objectID: nil, relationshipNodes: relKeyPathNode, objectIDs: &objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
-                        //let serverID = webStore.delegate?.webStore(store: webStore, serverIDForItem: value!, entityName: relEntity.destinationEntity!.name!)
-                        guard let identifierString = identifierForItem(value as! [String:Any], entityName: relEntity.destinationEntity!.name!) else {
-                            throw MIOPersistentStoreError.identifierIsNull()
-                        }
-                        parsedValues[key] = identifierString
+            else if let rel = prop as? NSRelationshipDescription
+            {
+                if rel.isToMany == false {
+                    guard let uuid = value as? UUID ?? ( value is String ? UUID(uuidString: value as! String) : nil ) else {
+                        throw MIOPersistentStoreError.invalidValueType( entityName: rel.name, key: serverKey, value: value )
                     }
+                                        
+                    parsedValues[key] = uuid
                 }
-                else {
+                else
+                {
+                    if let uuids = value as? [UUID] { parsedValues[key] = uuids; continue }
                     
                     var array = [UUID]()
-                    let relKeyPathNode = relationshipNodes![key] as? NSMutableDictionary
-                    // let serverValues = (value as? [Any]) != nil ? value as!  [Any] : []
-                    let serverValues = value as! [Any]
-                    for relatedItem in serverValues {
-                        
-                        guard let ri = relatedItem as? [String:Any] else {
-                            print("[MIOPersistentStoreOperation] item: \(relatedItem)")
-                            throw MIOPersistentStoreError.invalidValueType( entityName: relEntity.name, key: serverKey, value: relatedItem )
-                        }
-
-                        guard let dst = relEntity.destinationEntity else {
-                            print("[MIOPersistentStoreOperation] dst: \(String(describing: relEntity.destinationEntity))")
-                            throw MIOPersistentStoreError.invalidValueType( entityName: relEntity.name, key: serverKey, value: relEntity.destinationEntity?.name ?? "relEntity.destinationEntity is nil" )
-                        }
-
-                        try updateObject(values: ri, fetchEntity: dst, objectID: nil, relationshipNodes: relKeyPathNode, objectIDs: &objectIDs, insertedObjectIDs: insertedObjectIDs, updatedObjectIDs: updatedObjectIDs)
-                        //let serverID = webStore.delegate?.webStore(store: webStore, serverIDForItem: relatedItem, entityName: relEntity.destinationEntity!.name!)
-                        guard let identifier = identifierForItem(relatedItem as! [String:Any], entityName: relEntity.destinationEntity!.name!) else {
-                            throw MIOPersistentStoreError.identifierIsNull()
-                        }
-                        array.append( identifier )
+                    guard let rel_values = value as? [String] else {
+                        throw MIOPersistentStoreError.invalidValueType( entityName: rel.name, key: serverKey, value: value )
                     }
                     
+                    for id in rel_values {
+                        guard let uuid = UUID( uuidString: id ) else {
+                            throw MIOPersistentStoreError.invalidValueType( entityName: rel.name, key: serverKey, value: id )
+                        }
+                        array.append( uuid )
+                    }
                     parsedValues[key] = array
                 }
             }
+             
         }
                 
         return parsedValues
